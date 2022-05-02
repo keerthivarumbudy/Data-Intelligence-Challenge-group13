@@ -84,6 +84,27 @@ class Robot:
             else:
                 return False
 
+    def move_to_position(self):
+        # Can't move if we're dead now, can we?
+        if not self.alive:
+            return False
+        new_pos = tuple(np.array(self.pos) + self.dirs[self.orientation])
+        # Only move to non-blocked tiles:
+        if self.grid.cells[new_pos] >= 0:
+            tile_after_move = self.grid.cells[new_pos]
+            self.grid.cells[self.pos] = 0
+            self.grid.cells[new_pos] = self.orients[self.orientation]
+            self.pos = new_pos
+            self.history[0].append(self.pos[0])
+            self.history[1].append(self.pos[1])
+            # Death:
+            if tile_after_move == 3:
+                self.alive = False
+                return False
+            return True
+        else:
+            return False
+
     def rotate(self, dir):
         current = list(self.orients.keys()).index(self.orientation)
         if dir == 'r':
