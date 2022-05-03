@@ -101,6 +101,30 @@ def calculate_values(robot):
     return V
 
 
+def get_reward(robot, s, a):
+    # Get the possible values (dirty/clean) of the tiles we can end up at after a move:
+    new_pos = tuple(np.array(robot.pos) + robot.dirs[a])
+    
+    reward_dict = {
+        -2: -2,
+        -1: -2,
+        0: -1,
+        1: 1,
+        2: 10,
+        3: -10
+    }
+    state_reward = reward_dict[s.grid.cells[new_pos]]
+    
+    # modified from environment.py
+    # TODO: correct?
+    expected_drain = s.battery_drain_p * np.random.exponential(s.battery_drain_lam)
+    
+    # reward is reward of moving to new state + expected battery drain (negative constant)
+    reward = state_reward + expected_drain
+    
+    return reward
+
+
 def robot_epoch(robot):
     robot_copy = copy.deepcopy(robot)
     # calculate accurate values for each square
@@ -119,3 +143,15 @@ def robot_epoch(robot):
     # Move:
     robot.move()
     #handle negative cases
+    
+
+if __name__ == '__main__':
+    import pickle
+    from environment import Robot
+    from state import State
+    with open(f'grid_configs/example-random-house-0.grid', 'rb') as f:
+        grid = pickle.load(f)
+    robot = Robot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2)
+    s = State(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2)
+    a = 'n'
+    get_reward(robot, s, a)
