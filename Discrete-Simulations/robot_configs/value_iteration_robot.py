@@ -2,9 +2,10 @@ import copy
 
 import numpy as np
 
-# Value Iteration based robot:
-first = True
+orients = {'n': -3, 'e': -4, 's': -5, 'w': -6}
+dirs = {'n': (0, -1), 'e': (1, 0), 's': (0, 1), 'w': (-1, 0)}
 
+# Value Iteration based robot:
 # SMALL_ENOUGH is referred to by the mathematical symbol theta in equations
 SMALL_ENOUGH = 1e-3
 GAMMA = 0.9
@@ -32,11 +33,11 @@ def best_action_value(robot, V, s):
             best_a = a
     return best_a, best_value
 
-def initialize_random_policy():
+def initialize_random_policy(robot):
     # policy is a lookup table for state -> action
     # we'll randomly choose an action and update as we learn
     policy = {}
-    for s in grid.non_terminal_states():
+    for s in robot.grid.non_terminal_states():
         policy[s] = np.random.choice(ALL_POSSIBLE_ACTIONS)
     return policy
 
