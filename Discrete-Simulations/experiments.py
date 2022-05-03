@@ -81,13 +81,18 @@ def run_grid(robot, grid_file, randomness_move, drain_prob, drain, vision, orien
     plt.subplots_adjust(hspace=0.4,
                         wspace=0.4)
     # plt savefig to unique dir in plots
-    fig1.savefig(f'plots/{grid_file}-subplots.png')
+    save_dir = os.path.join('plots', f'{grid_file}', f'{orientation}')
+    print(save_dir)
+    print(os.path.join(save_dir, f'{randomness_move}_{drain_prob}_{drain}_{vision}_plot.png'))
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    fig1.savefig(os.path.join(save_dir, f'{randomness_move}_{drain_prob}_{drain}_{vision}_plot.png'))
 
 def run_experiment(robot):
     random.random()
 
     for grid_file in os.listdir('grid_configs'):
-        if grid_file == 'empty.grid':
+        if grid_file == 'empty.grid' or grid_file == 'death.grid':
             continue
         
         robot = [robot]
@@ -99,7 +104,7 @@ def run_experiment(robot):
         drain_prob = evenly_floats
         # evenly distributed list of integers between 0 and 10
         drain = np.random.randint(0, 10, size=10)
-        vision = np.random.randint(0, 5, size=10)
+        vision = np.random.randint(1, 5, size=10)
 
         orientation = ['n', 'e', 's', 'w']
         print(robot, grid_file, randomness_move, drain_prob, drain, vision, orientation)
@@ -130,4 +135,11 @@ def main():
     
 
 if __name__ == '__main__':
+    robot = 'greedy_random_robot'
+    grid = 'example-random-house-0.grid'
+    randomness_move = 0.04716257948841984
+    drain_prob = 0.6800854602934419 
+    drain = 1
+    vision = 0
+    orientation = 'n'
     main()
