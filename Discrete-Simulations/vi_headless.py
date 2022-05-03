@@ -3,7 +3,7 @@ import time
 
 from robot_configs.value_iteration_robot import robot_epoch
 import pickle
-from environment import Robot
+from environment import Robot, SmartRobot
 import matplotlib.pyplot as plt
 
 grid_file = 'house.grid'
@@ -25,7 +25,7 @@ for i in range(100):
     # Calculate the total visitable tiles:
     n_total_tiles = (grid.cells >= 0).sum()
     # Spawn the robot at (1,1) facing north with battery drainage enabled:
-    robot = Robot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2)
+    robot = SmartRobot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2)
     # Keep track of the number of robot decision epochs:
     n_epochs = 0
     while True:
