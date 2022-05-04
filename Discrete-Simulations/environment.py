@@ -1,6 +1,5 @@
 import numpy as np
 import random
-from robot_configs.value_iteration_robot import State
 
 SMALL_ENOUGH = 1e-3
 ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
@@ -189,6 +188,7 @@ class SmartRobot(Robot):
 
 
     def calculate_values(self):
+        from robot_configs.value_iteration_robot import State
         current_state = State(self.grid, self.pos, self.orientation, self.p_move, self.battery_drain_p,
                               self.battery_drain_lam)
 
@@ -222,6 +222,7 @@ class SmartRobot(Robot):
         return policy
 
     def calculate_policy(self):
+        from robot_configs.value_iteration_robot import State
         current_state = State(self.grid, self.pos, self.orientation, self.p_move, self.battery_drain_p,
                               self.battery_drain_lam)
         possible_states = current_state.get_possible_states()
@@ -236,3 +237,97 @@ class SmartRobot(Robot):
 #{(grid, pos): best_a, }
 
 
+class DumbRobot(Robot):
+    def __init__(self, grid, pos, orientation, p_move=0, battery_drain_p=0, battery_drain_lam=0, vision=1, gamma=0.9):
+        if grid.cells[pos[0], pos[1]] != 1:
+            raise ValueError
+        self.orientation = orientation
+        self.pos = pos
+        self.grid = grid
+        self.orients = {'n': -3, 'e': -4, 's': -5, 'w': -6}
+        self.dirs = {'n': (0, -1), 'e': (1, 0), 's': (0, 1), 'w': (-1, 0)}
+        self.grid.cells[pos] = self.orients[self.orientation]
+        self.history = [[], []]
+        self.p_move = p_move
+        self.battery_drain_p = battery_drain_p
+        self.battery_drain_lam = battery_drain_lam
+        self.battery_lvl = 100
+        self.alive = True
+        self.vision = vision
+        self.gamma = gamma
+        
+        self.state = self.init_state(self.grid, self.pos)
+        self.S = self.generate_reachable_states(self.state)
+        
+        self.policy = self.init_policy()
+        self.values = self.init_values()
+        
+    def init_state(self, grid, pos):
+        from robot_configs.policy_iteration import State
+        
+        # a state is the grid combined with a robot position
+        initial_state = State(self.grid, self.pos)
+        
+        return initial_state
+        
+    def generate_reachable_states(self, state):
+        """
+        :param state: {
+            loc: (index_x, index_y),
+            grid: [[]]
+        }
+
+        :return:
+        {
+            "state_id": {
+                "loc": (index_x, index_y), 
+                "grid": [[]],
+                "immediately_reachable_states": {
+                    "N": state_id,
+                    "S": ....
+                }
+            }, 
+
+            "state_id": ...
+
+            ...
+
+        }
+        """
+        pass
+    
+    def init_policy(self):
+        # randomly assign policies
+        orientations = [i for i in orients.keys()]
+        return np.random.choice(orientations, self.grid.cells.shape)
+
+    def init_values(self):
+        # init all values as 0
+        return np.zeros(self.grid.cells.shape)
+
+    # Policy Evaluation
+
+    def calculate_values(self):
+        # calculate the value of each state
+
+        # get reward for each surrounding state
+        surrounding_rewards = [get_reward(self, orientation) for orientation in orients.keys()]
+
+        # get values of surrounding states
+        surrounding_pos = [self.pos + direction for direction in dirs.values()]
+        surrounding_values = [self.values[pos] for pos in surrounding_pos]
+        
+        value_per_orient = [self.p_move * surrounding_values[i] for i in range(surrounding_values.length) if orients.keys()[i] != self.orientation else (1-self.p_move) * surrounding_values[i]]
+        future_value = self.gamma * ()
+
+    def sweep(self, no_sweeps=1):
+        # sweep the grid and update values until convergence
+        for _ in range(no_sweeps):
+            self.calculate_values()
+
+
+    # Policy Improvement
+
+    def update_policy(self):
+        # update the policy greedily based on values of accessible states
+        pass
