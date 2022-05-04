@@ -258,8 +258,8 @@ class DumbRobot(Robot):
         self.vision = vision
         self.gamma = gamma
         
-        self.state = self.init_state(self.grid, self.pos)
-        self.S = self.generate_reachable_states(self.state)
+        self.state = self.init_state()
+        self.S = self.generate_reachable_states()
         
         self.policy = self.init_policy()
         self.values = self.init_values()
@@ -268,7 +268,7 @@ class DumbRobot(Robot):
         from robot_configs.policy_iteration import State
         
         # a state is the grid combined with a robot position
-        initial_state = State(self.grid, self.pos)
+        initial_state = State(self.grid, self.pos, self.orientation)
         
         return initial_state
     
@@ -309,7 +309,52 @@ class DumbRobot(Robot):
 
         }
         """
-        pass
+        from collections import OrderedDict
+        new_dict = OrderedDict({
+            "0": {
+                "loc": (1,1), 
+                "grid": self.grid,
+                "immediately_reachable_states": {
+                    "n": "1",
+                    "e": "2",
+                    "s": "3",
+                    "w": "4"
+                }
+            },
+            "1": {
+                "loc": (1, 0), 
+                "grid": self.grid,
+                "immediately_reachable_states": {
+                    "n": "1",
+                    "s": "1"
+                }
+            },
+            "2": {
+                "loc": (2, 1), 
+                "grid": self.grid,
+                "immediately_reachable_states": {
+                    "n": "1",
+                    "s": "1"
+                }
+            },
+            "3": {
+                "loc": (1, 2), 
+                "grid": [[]],
+                "immediately_reachable_states": {
+                    "n": "1",
+                    "s": "1"
+                }
+            },
+            "4": {
+                "loc": (0, 1), 
+                "grid": self.grid,
+                "immediately_reachable_states": {
+                    "n": "1",
+                    "s": "1"
+                }
+            }
+        })
+        return new_dict
     
     def init_policy(self):
         # randomly assign policies
@@ -323,7 +368,7 @@ class DumbRobot(Robot):
     def stochastic_final_reward(self, action, immediate_aggs):
         # calculate P(s′,r|s,a)(r+γv(s′)) for all possible actions in state,
         # where intended action has prob (1-p_move) and other 3 moves have prob p_move/3
-        immediate_final_rewards = [(self.p_move/3) * immediate_aggs[i] if not orients.keys()[i] == action else (1-self.p_move) * immediate_aggs[i] for i in range(immediate_aggs.length)]
+        immediate_final_rewards = [(self.p_move/3) * immediate_aggs[i] if not list(orients.keys())[i] == action else (1-self.p_move) * immediate_aggs[i] for i in range(len(immediate_aggs))]
         return sum(immediate_final_rewards)
 
     # Policy Evaluation
@@ -331,7 +376,7 @@ class DumbRobot(Robot):
     def calculate_values(self, state_id):
         # calculate the value of each state
         
-        state_ind = self.S.index(state_id)
+        state_ind = list(self.S).index(state_id)
         
         # get π(a|s)
         optimal_state_policy = self.policy[state_ind]
@@ -339,16 +384,16 @@ class DumbRobot(Robot):
         # get ids of immediate reachable states
         immediate_state_ids = self.S[state_id]["immediately_reachable_states"]
         # get index of immediate_state_ids in self.S
-        immediate_state_ids_index = [self.S.index(i) for i in immediate_state_ids.values()]
+        immediate_state_ids_index = [list(self.S).index(i) for i in immediate_state_ids.values()]
         
         # get v(s')
         state_value = self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(optimal_state_policy)]]
 
         # get reward for each immediate state
-        immediate_rewards = [get_reward(self.S[state_id], orientation) for orientation in orients.keys()]
+        immediate_rewards = [get_reward_dict(self.S[state_id], orientation) for orientation in orients.keys()]
         
         # get the value of each immediate state
-        immediate_values = [self.calculate_values(id) for id in immediate_state_ids]
+        immediate_values = [self.calculate_values(id) for id in list(immediate_state_ids.values())]
         
         # aggregate rewards and future values of state
         immediate_aggs = [reward + self.gamma * value for reward, value in zip(immediate_rewards, immediate_values)]
@@ -360,7 +405,7 @@ class DumbRobot(Robot):
         
         return state_value, state_future_value
             
-    def sweep_convergence(self, convergence_threshold=0.01):
+    def sweep_until_convergence(self, convergence_threshold=0.01):
         # while |v′(s)−v(s)| < convergence_threshold
         
         old_values = self.values
@@ -417,3 +462,25 @@ class DumbRobot(Robot):
             return True
         # otherwise, rerun policy evaluation with new policy
         return False
+    
+if __name__ == '__main__':
+    import pickle
+    with open(f'grid_configs/example-random-house-0.grid', 'rb') as f:
+        grid = pickle.load(f)
+    robot = DumbRobot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2)
+    
+    # get reward for each immediate state
+    immediate_rewards = [1,1,1,1]
+    
+    # get the value of each immediate state
+    immediate_values = [4,8,6,3]
+    
+    # aggregate rewards and future values of state
+    immediate_aggs = [reward + robot.gamma * value for reward, value in zip(immediate_rewards, immediate_values)]
+        
+    print(robot.stochastic_final_reward('e', immediate_aggs))
+    
+    print(robot.policy)
+    print(robot.values)
+    
+    print(robot.calculate_values("0"))
