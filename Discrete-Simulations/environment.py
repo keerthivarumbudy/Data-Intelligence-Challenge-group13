@@ -1,7 +1,7 @@
-import numpy as np
 import copy
 import random
-from robot_configs.value_iteration_robot import State, get_possible_states
+
+import numpy as np
 
 SMALL_ENOUGH = 1e-3
 #ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
@@ -91,7 +91,7 @@ class Robot:
                 return False
 
     def move_to_position(self):
-    # Can't move if we're dead now, can we?
+        # Can't move if we're dead now, can we?
         if not self.alive:
             return False
         new_pos = tuple(np.array(self.pos) + self.dirs[self.orientation])
@@ -158,38 +158,38 @@ class State:
         self.orientation = orientation
         self.pos = pos
         self.grid = grid
-        self.grid.cells[pos] = orients[self.orientation]
+        #self.grid.cells[pos] = orients[self.orientation]
         self.p_move = p_move
         self.alive = True
         self.battery_drain_p = battery_drain_p
         self.battery_drain_lam = battery_drain_lam
 
-    def move(self):
-        # Can't move if we're dead now, can we?
-        if not self.alive:
-            return False
-        new_pos = tuple(np.array(self.pos) + dirs[self.orientation])
-        # Only move to non-blocked tiles:
-        if self.grid.cells[new_pos] >= 0:
-            tile_after_move = self.grid.cells[new_pos]
-            self.grid.cells[self.pos] = 0
-            self.grid.cells[new_pos] = orients[self.orientation]
-            self.pos = new_pos
-            # Death:
-            if tile_after_move == 3:
-                self.alive = False
-                return False
-            return True
-        else:
-            return False
+    # def move(self):
+    #     # Can't move if we're dead now, can we?
+    #     if not self.alive:
+    #         return False
+    #     new_pos = tuple(np.array(self.pos) + dirs[self.orientation])
+    #     # Only move to non-blocked tiles:
+    #     if self.grid.cells[new_pos] >= 0:
+    #         tile_after_move = self.grid.cells[new_pos]
+    #         self.grid.cells[self.pos] = 0
+    #         self.grid.cells[new_pos] = orients[self.orientation]
+    #         self.pos = new_pos
+    #         # Death:
+    #         if tile_after_move == 3:
+    #             self.alive = False
+    #             return False
+    #         return True
+    #     else:
+    #         return False
 
-    def rotate(self, dir):
+    def rotate(self, curr_dir):
         current = list(orients.keys()).index(self.orientation)
-        if dir == 'r':
+        if curr_dir == 'r':
             self.orientation = list(orients.keys())[(current + 1) % 4]
-        elif dir == 'l':
+        elif curr_dir == 'l':
             self.orientation = list(orients.keys())[current - 1]
-        self.grid.cells[self.pos] = orients[self.orientation]
+        #self.grid.cells[self.pos] = orients[self.orientation]
 
 
 
@@ -228,13 +228,14 @@ class State:
         return reward
 
     def get_neighbouring_states(self): # Checks neighboring state is not a wall/obstacle
+        if not self.alive: #at death state
+            return []
         moves = list(dirs.values())
-        states = {}
+        states = []
         for move in moves:
-            new_move = tuple(np.array(self.pos) + np.array(move))
-            if new_move[0] < self.grid.cells.shape[0] and new_move[1] < self.grid.cells.shape[1] and \
-                    new_move[0] >= 0 and new_move[1] >= 0 and self.grid.cells[new_move] >=0:
-                new_pos = tuple(np.array(self.pos) + dirs[self.orientation])
+            new_pos = tuple(np.array(self.pos) + np.array(move))
+            if new_pos[0] < self.grid.cells.shape[0] and new_pos[1] < self.grid.cells.shape[1] and \
+                    new_pos[0] >= 0 and new_pos[1] >= 0 and self.grid.cells[new_pos] >=0:
                 new_state = copy.deepcopy(self)
                 # Find out how we should orient ourselves:
                 new_orient = list(dirs.keys())[list(dirs.values()).index(move)]
@@ -247,12 +248,14 @@ class State:
                 # Only move to non-blocked tiles:
                 if new_state.grid.cells[new_pos] >= 0:
                     tile_after_move = new_state.grid.cells[new_pos]
-                    new_state.grid.cells[new_state.pos] = 0
-                    new_state.grid.cells[new_pos] = new_state.orients[new_state.orientation]
-                    new_state.pos = new_pos
-                    states.add(new_state)
                     if tile_after_move == 3:
-                        self.alive = False
+                        new_state.alive = False
+                    else:
+                        new_state.grid.cells[new_state.pos] = 0
+                    #new_state.grid.cells[new_pos] = new_state.orients[new_state.orientation]
+                    new_state.pos = new_pos
+
+                    states.append(new_state)
         return states
 
     def get_action_reward(self, action):
@@ -273,9 +276,11 @@ class State:
 
 
 def is_terminal(state):
-    # TODO: consider unreachable situations
-    g = state.grid.cells
 
+    if not state.alive:
+        return True
+    g = state.grid.cells
+    # TODO: consider unreachable situations
     return not np.isin(g, [1, 2]).any()
 
 
@@ -289,10 +294,11 @@ def best_action_value(V, s, gamma):
         state_primes = s.get_action_reward(a)
         sum_a = 0
         for (prob, r, state_prime) in state_primes:
-            if not (state_prime.grid.cells, state_prime.pos) in V:
-                V[(str(state_prime.grid.cells), state_prime.pos)] = 0
+            state_prime_value = 0
+            if (str(state_prime.grid.cells), state_prime.pos) in V:
+                state_prime_value = V[(str(state_prime.grid.cells), state_prime.pos)]
 
-            sum_a += prob * (r + (gamma * V[(str(state_prime.grid.cells), state_prime.pos)]))
+            sum_a += prob * (r + (gamma * state_prime_value))
 
         v = sum_a
         if v > best_value:
@@ -301,21 +307,17 @@ def best_action_value(V, s, gamma):
     return best_a, best_value
 
 
-def evaluate_state(state, V, gamma):
-
+def evaluate_state(state, V, gamma, all_states):
     if is_terminal(state):
-        print("got terminal state")
+        print("REACHED terminal state", (str(state.grid.cells), state.pos))
         return V
 
     best_a, best_val = best_action_value(V, state, gamma)
-    print(str(state.grid.cells))
     V[(str(state.grid.cells), state.pos)] = best_val
-
+    all_states[(str(state.grid.cells), state.pos)] = state
     for new_state in state.get_neighbouring_states():
-        print("gotten into loop")
-        if not (new_state.grid.cells, new_state.pos) in V:
-            V = evaluate_state(new_state, V, gamma)
-
+        if not (str(new_state.grid.cells), new_state.pos) in V:
+            V = evaluate_state(new_state, V, gamma, all_states)
     return V
 
 
@@ -328,7 +330,7 @@ class SmartRobot(Robot):
         self.grid = grid
         self.orients = {'n': -3, 'e': -4, 's': -5, 'w': -6}
         self.dirs = {'n': (0, -1), 'e': (1, 0), 's': (0, 1), 'w': (-1, 0)}
-        self.grid.cells[pos] = self.orients[self.orientation]
+        #self.grid.cells[pos] = self.orients[self.orientation]
         self.history = [[], []]
         self.p_move = p_move
         self.battery_drain_p = battery_drain_p
@@ -342,11 +344,32 @@ class SmartRobot(Robot):
 
 
     def calculate_values(self):
+        print("Start calculating V ")
         current_state = State(self.grid, self.pos, self.orientation, self.p_move, self.battery_drain_p,
                               self.battery_drain_lam)
         V = {}
-        return evaluate_state(current_state, V, self.gamma)
+        all_states = {}
 
+        V = evaluate_state(current_state, V, self.gamma, all_states)
+        print("robot.v count:", len(V.keys()))
+        print("robot.all_states count:", len(all_states.keys()))
+        biggest_change = np.inf
+        iteration_counter = 0
+        biggest_change_state = current_state
+        while biggest_change > SMALL_ENOUGH:
+            biggest_change = 0
+            for s in all_states.values():
+                old_v = V[(str(s.grid.cells), s.pos)]
+                _, new_v = best_action_value(V, s, self.gamma)
+                V[(str(s.grid.cells), s.pos)] = new_v
+
+                if (np.abs(old_v - new_v) > biggest_change):
+                    biggest_change = np.abs(old_v - new_v)
+                    biggest_change_state = (str(s.grid.cells), s.pos)
+                    #biggest_change = max(biggest_change, np.abs(old_v - new_v))
+            iteration_counter+=1
+            print("iteration:", iteration_counter, "biggest_change:", biggest_change, "state:",biggest_change_state)
+        return V
 
 
 
@@ -363,5 +386,3 @@ class SmartRobot(Robot):
     #     return policy
 
 #{(grid, pos): best_a, }
-
-
