@@ -240,7 +240,7 @@ class State:
                 print(list(dirs.values()))
                 print(self.grid.cells[new_move])
 
-                new_orient = list(dirs.keys())[list(dirs.values()).index(self.grid.cells[new_move])]
+                new_orient = list(dirs.keys())[list(dirs.values()).index(move)]
                 # Orient ourselves towards the dirty tile:
                 while new_orient != new_state.orientation:
                     # If we don't have the wanted orientation, rotate clockwise until we do:
