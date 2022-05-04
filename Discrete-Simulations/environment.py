@@ -319,16 +319,22 @@ class DumbRobot(Robot):
     def init_values(self):
         # init all values as 0
         return np.zeros(len(self.S))
+    
+    def stochastic_final_reward(self, action, immediate_aggs):
+        # calculate P(s′,r|s,a)(r+γv(s′)) for all possible actions in state,
+        # where intended action has prob (1-p_move) and other 3 moves have prob p_move/3
+        immediate_final_rewards = [(self.p_move/3) * immediate_aggs[i] if not orients.keys()[i] == action else (1-self.p_move) * immediate_aggs[i] for i in range(immediate_aggs.length)]
+        return sum(immediate_final_rewards)
 
     # Policy Evaluation
 
-    def calculate_values(self):
+    def calculate_values(self, state_id):
         # calculate the value of each state
         
-        state_id = self.get_state_id()
+        state_ind = self.S.index(state_id)
         
         # get π(a|s)
-        optimal_state_policy = self.policy[state_id]
+        optimal_state_policy = self.policy[state_ind]
         
         # get ids of immediate reachable states
         immediate_state_ids = self.S[state_id]["immediately_reachable_states"]
@@ -339,39 +345,75 @@ class DumbRobot(Robot):
         state_value = self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(optimal_state_policy)]]
 
         # get reward for each immediate state
-        immediate_rewards = [get_reward(self.S, state_id, orientation) for orientation in orients.keys()]
+        immediate_rewards = [get_reward(self.S[state_id], orientation) for orientation in orients.keys()]
         
         # get the value of each immediate state
-        immediate_values = [self.calculate_future_values(i) for i in immediate_state_ids_index]
+        immediate_values = [self.calculate_values(id) for id in immediate_state_ids]
         
         # aggregate rewards and future values of state
         immediate_aggs = [reward + self.gamma * value for reward, value in zip(immediate_rewards, immediate_values)]
         
-        # calculate P(s′,r|s,a)(r+γv(s′)) for all possible actions in state,
-        # where policy move has prob (1-p_move) and other 3 moves have prob p_move/3
-        immediate_final_rewards = [(self.p_move/3) * immediate_aggs[i] if not orients.keys()[i] == optimal_state_policy else (1-self.p_move) * immediate_aggs[i] for i in range(immediate_aggs.length)]
+        immediate_final_rewards = self.stochastic_final_reward(optimal_state_policy, immediate_aggs)
         
         # sum up to get final future value for state
-        future_state_value = sum(immediate_final_rewards)
+        state_future_value = sum(immediate_final_rewards)
         
-        return state_value, future_state_value
-
-    def sweep(self, no_sweeps=1):
-        # sweep the grid and update values until convergence
-        for _ in range(no_sweeps):
-            self.calculate_values()
+        return state_value, state_future_value
             
     def sweep_convergence(self, convergence_threshold=0.01):
         # while |v′(s)−v(s)| < convergence_threshold
         
         old_values = self.values
-        new_values = self.calculate_values()
+        new_values = old_values
         # TODO: is s current state in for loop or is it initial state?
         while abs(new_values[self.state.pos] - old_values[self.state.pos]) < convergence_threshold:
-            old_values, new_values = self.calculate_values()
+            old_values = new_values
+            
+            for s in range(self.S.keys()):
+                state_ind = self.S.index(s)
+                old_values[state_ind], new_values[state_ind] = self.calculate_values(s)
+        
+        self.values = new_values
 
     # Policy Improvement
 
     def update_policy(self):
         # update the policy greedily based on values of accessible states
-        pass
+        
+        # init new policy π′(a|s)
+        old_policy = self.policy
+        new_policy = old_policy
+        for s in range(self.S.keys()):
+            state_ind = self.S.index(s)
+            self.values[state_ind]
+            
+            # get ids of immediate reachable states
+            immediate_state_ids = self.S[s]["immediately_reachable_states"]
+            # get index of immediate_state_ids in self.S
+            immediate_state_ids_index = [self.S.index(i) for i in immediate_state_ids.values()]
+
+            # get reward for each immediate state
+            immediate_rewards = [get_reward(self.S[s], orientation) for orientation in orients.keys()]
+            
+            # get the value of each immediate state through already updated self.values
+            immediate_values = [self.values[i] for i in immediate_state_ids_index]
+            
+            # aggregate rewards and future values of state
+            immediate_aggs = [reward + self.gamma * value for reward, value in zip(immediate_rewards, immediate_values)]
+            
+            # calculate final rewards for all orientations
+            possible_actions = orients.keys()
+            possible_actions_final_rewards = [self.stochastic_final_reward(action, immediate_aggs) for action in possible_actions]
+            
+            # find max a
+            max_action_ind = max(range(len(possible_actions_final_rewards)), key=possible_actions_final_rewards.__getitem__)
+            
+            new_policy[state_ind] = possible_actions[max_action_ind]
+            
+        # set new policy
+        self.policy = new_policy
+        # if π′ == π, then policy has converged
+        if np.array_equal(old_policy, new_policy):
+            return True
+        # otherwise, rerun policy evaluation with new policy
+        return False
