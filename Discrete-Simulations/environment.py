@@ -1,6 +1,8 @@
 import numpy as np
 import random
 
+from robot_configs.utility import *
+
 SMALL_ENOUGH = 1e-3
 ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
 
@@ -262,16 +264,29 @@ class DumbRobot(Robot):
         self.policy = self.init_policy()
         self.values = self.init_values()
         
-    def init_state(self, grid, pos):
+    def init_state(self):
         from robot_configs.policy_iteration import State
         
         # a state is the grid combined with a robot position
         initial_state = State(self.grid, self.pos)
         
         return initial_state
-        
-    def generate_reachable_states(self, state):
+    
+    def get_state_id(self):
         """
+        Generate state id from grid and position
+        :param grid:[[]]
+        :param pos: (int, int)
+        
+        :return state_id: string
+        """
+        pass
+        
+    def generate_reachable_states(self):
+        """
+        Generate all reachable states in dict, where every
+        entry has loc, grid and immediate_reachable_states
+        
         :param state: {
             loc: (index_x, index_y),
             grid: [[]]
@@ -299,32 +314,61 @@ class DumbRobot(Robot):
     def init_policy(self):
         # randomly assign policies
         orientations = [i for i in orients.keys()]
-        return np.random.choice(orientations, self.grid.cells.shape)
+        return np.random.choice(orientations, len(self.S))
 
     def init_values(self):
         # init all values as 0
-        return np.zeros(self.grid.cells.shape)
+        return np.zeros(len(self.S))
 
     # Policy Evaluation
 
     def calculate_values(self):
         # calculate the value of each state
-
-        # get reward for each surrounding state
-        surrounding_rewards = [get_reward(self, orientation) for orientation in orients.keys()]
-
-        # get values of surrounding states
-        surrounding_pos = [self.pos + direction for direction in dirs.values()]
-        surrounding_values = [self.values[pos] for pos in surrounding_pos]
         
-        value_per_orient = [self.p_move * surrounding_values[i] for i in range(surrounding_values.length) if orients.keys()[i] != self.orientation else (1-self.p_move) * surrounding_values[i]]
-        future_value = self.gamma * ()
+        state_id = self.get_state_id()
+        
+        # get π(a|s)
+        optimal_state_policy = self.policy[state_id]
+        
+        # get ids of immediate reachable states
+        immediate_state_ids = self.S[state_id]["immediately_reachable_states"]
+        # get index of immediate_state_ids in self.S
+        immediate_state_ids_index = [self.S.index(i) for i in immediate_state_ids.values()]
+        
+        # get v(s')
+        state_value = self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(optimal_state_policy)]]
+
+        # get reward for each immediate state
+        immediate_rewards = [get_reward(self.S, state_id, orientation) for orientation in orients.keys()]
+        
+        # get the value of each immediate state
+        immediate_values = [self.calculate_future_values(i) for i in immediate_state_ids_index]
+        
+        # aggregate rewards and future values of state
+        immediate_aggs = [reward + self.gamma * value for reward, value in zip(immediate_rewards, immediate_values)]
+        
+        # calculate P(s′,r|s,a)(r+γv(s′)) for all possible actions in state,
+        # where policy move has prob (1-p_move) and other 3 moves have prob p_move/3
+        immediate_final_rewards = [(self.p_move/3) * immediate_aggs[i] if not orients.keys()[i] == optimal_state_policy else (1-self.p_move) * immediate_aggs[i] for i in range(immediate_aggs.length)]
+        
+        # sum up to get final future value for state
+        future_state_value = sum(immediate_final_rewards)
+        
+        return state_value, future_state_value
 
     def sweep(self, no_sweeps=1):
         # sweep the grid and update values until convergence
         for _ in range(no_sweeps):
             self.calculate_values()
-
+            
+    def sweep_convergence(self, convergence_threshold=0.01):
+        # while |v′(s)−v(s)| < convergence_threshold
+        
+        old_values = self.values
+        new_values = self.calculate_values()
+        # TODO: is s current state in for loop or is it initial state?
+        while abs(new_values[self.state.pos] - old_values[self.state.pos]) < convergence_threshold:
+            old_values, new_values = self.calculate_values()
 
     # Policy Improvement
 
