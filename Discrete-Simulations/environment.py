@@ -277,8 +277,6 @@ class State:
 
 def is_terminal(state):
 
-    if not state.alive:
-        return True
     g = state.grid.cells
     # TODO: consider unreachable situations
     return not np.isin(g, [1, 2]).any()
@@ -308,15 +306,37 @@ def best_action_value(V, s, gamma):
 
 
 def evaluate_state(state, V, gamma, all_states):
+    """
+    computes all possible states the robot can get to from a given state by
+    recursively tracking all moves.
+
+    :param state: current state
+    :param V: Value matrix
+    :param gamma: discount factor
+    :param all_states: list of all states seen so far
+    :return: Value matrix V
+    """
+
+
+    if not state.alive:
+        V[(str(state.grid.cells), state.pos)] = -1000 #high negative value for death state
+        all_states[(str(state.grid.cells), state.pos)] = state
+        print("REACHED death state", (str(state.grid.cells), state.pos))
+        return V
+
     if is_terminal(state):
+        V[(str(state.grid.cells), state.pos)] = 1000 #high value for final state
+        all_states[(str(state.grid.cells), state.pos)] = state
         print("REACHED terminal state", (str(state.grid.cells), state.pos))
         return V
 
     best_a, best_val = best_action_value(V, state, gamma)
+
     V[(str(state.grid.cells), state.pos)] = best_val
     all_states[(str(state.grid.cells), state.pos)] = state
+
     for new_state in state.get_neighbouring_states():
-        if not (str(new_state.grid.cells), new_state.pos) in V:
+        if not (str(new_state.grid.cells), new_state.pos) in V: #check this state is not seen before
             V = evaluate_state(new_state, V, gamma, all_states)
     return V
 
@@ -349,13 +369,17 @@ class SmartRobot(Robot):
                               self.battery_drain_lam)
         V = {}
         all_states = {}
-
+        #find all states and compute V matrix (one iteration over all states)
         V = evaluate_state(current_state, V, self.gamma, all_states)
+
         print("robot.v count:", len(V.keys()))
         print("robot.all_states count:", len(all_states.keys()))
+
         biggest_change = np.inf
         iteration_counter = 0
         biggest_change_state = current_state
+        print(V)
+        # repeat until convergence
         while biggest_change > SMALL_ENOUGH:
             biggest_change = 0
             for s in all_states.values():
@@ -369,6 +393,7 @@ class SmartRobot(Robot):
                     #biggest_change = max(biggest_change, np.abs(old_v - new_v))
             iteration_counter+=1
             print("iteration:", iteration_counter, "biggest_change:", biggest_change, "state:",biggest_change_state)
+            print(V)
         return V
 
 
