@@ -237,9 +237,6 @@ class State:
                 new_pos = tuple(np.array(self.pos) + dirs[self.orientation])
                 new_state = copy.deepcopy(self)
                 # Find out how we should orient ourselves:
-                print(list(dirs.values()))
-                print(self.grid.cells[new_move])
-
                 new_orient = list(dirs.keys())[list(dirs.values()).index(move)]
                 # Orient ourselves towards the dirty tile:
                 while new_orient != new_state.orientation:
@@ -293,9 +290,9 @@ def best_action_value(V, s, gamma):
         sum_a = 0
         for (prob, r, state_prime) in state_primes:
             if not (state_prime.grid.cells, state_prime.pos) in V:
-                V[(state_prime.grid.cells, state_prime.pos)] = 0
+                V[(str(state_prime.grid.cells), state_prime.pos)] = 0
 
-            sum_a += prob * (r + (gamma * V[(state_prime.grid.cells, state_prime.pos)]))
+            sum_a += prob * (r + (gamma * V[(str(state_prime.grid.cells), state_prime.pos)]))
 
         v = sum_a
         if v > best_value:
@@ -307,13 +304,15 @@ def best_action_value(V, s, gamma):
 def evaluate_state(state, V, gamma):
 
     if is_terminal(state):
+        print("got terminal state")
         return V
 
     best_a, best_val = best_action_value(V, state, gamma)
-
-    V[(state.grid.cells, state.pos)] = best_val
+    print(str(state.grid.cells))
+    V[(str(state.grid.cells), state.pos)] = best_val
 
     for new_state in state.get_neighbouring_states():
+        print("gotten into loop")
         if not (new_state.grid.cells, new_state.pos) in V:
             V = evaluate_state(new_state, V, gamma)
 
@@ -348,27 +347,7 @@ class SmartRobot(Robot):
         V = {}
         return evaluate_state(current_state, V, self.gamma)
 
-        #initialize V(s)
 
-        possible_states = get_possible_states(current_state)
-        print("robot.states:", possible_states)
-        for s in possible_states:
-            V[s] = 0
-        #repeat until convergence
-        # V[s] = max[a]{ sum[s',r] { p(s',r|s,a)[r + gamma*V[s']] } }
-        while biggest_change > SMALL_ENOUGH:
-            # biggest_change is referred to by the mathematical symbol delta in equations
-            biggest_change = 0
-
-            current_state
-
-            for s in possible_states:
-                old_v = V[s]
-                _, new_v = best_action_value(V, s, self.gamma)
-                V[s] = new_v
-                biggest_change = max(biggest_change, np.abs(old_v - new_v))
-
-        return V
 
 
     # def calculate_policy(self):

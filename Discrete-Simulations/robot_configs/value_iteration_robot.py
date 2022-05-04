@@ -152,9 +152,9 @@ def best_action_value(V, s, gamma):
         sum_a = 0
         for (prob, r, state_prime) in state_primes:
             if not (state_prime.grid.cells, state_prime.pos) in V:
-                V[(state_prime.grid.cells, state_prime.pos)] = 0
+                V[(str(state_prime.grid.cells), state_prime.pos)] = 0
 
-            sum_a += prob * (r + (gamma * V[(state_prime.grid.cells, state_prime.pos)]))
+            sum_a += prob * (r + (gamma * V[(str(state_prime.grid.cells), state_prime.pos)]))
 
         v = sum_a
         if v > best_value:
@@ -170,10 +170,10 @@ def evaluate_state(state, V, gamma):
 
     best_a, best_val = best_action_value(V, state, gamma)
 
-    V[(state.grid.cells, state.pos)] = best_val
+    V[(str(state.grid.cells), state.pos)] = best_val
 
     for new_state in state.get_neighbouring_states():
-        if not (new_state.grid.cells, new_state.pos) in V:
+        if not (str(new_state.grid.cells), new_state.pos) in V:
             V = evaluate_state(new_state, V, gamma)
 
     return V
