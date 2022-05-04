@@ -99,12 +99,13 @@ def run_experiment(robot):
         grid_file = [grid_file]
         
         # evenly distributed list of floats between 0 and 1
-        evenly_floats = np.random.uniform(0.0, 1.0, size=10)
+        # evenly_floats = np.random.uniform(0.0, 1.0, size=10)
+        evenly_floats = [0, 0.5, 1]
         randomness_move = evenly_floats
         drain_prob = evenly_floats
         # evenly distributed list of integers between 0 and 10
-        drain = np.random.randint(0, 10, size=10)
-        vision = np.random.randint(1, 5, size=10)
+        drain = [0, 5, 10]
+        vision = [1, 3, 5]
 
         orientation = ['n', 'e', 's', 'w']
         print(robot, grid_file, randomness_move, drain_prob, drain, vision, orientation)
