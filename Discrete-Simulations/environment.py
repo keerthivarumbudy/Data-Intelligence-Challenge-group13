@@ -89,7 +89,7 @@ class Robot:
                 return False
 
     def move_to_position(self):
-        # Can't move if we're dead now, can we?
+    # Can't move if we're dead now, can we?
         if not self.alive:
             return False
         new_pos = tuple(np.array(self.pos) + self.dirs[self.orientation])

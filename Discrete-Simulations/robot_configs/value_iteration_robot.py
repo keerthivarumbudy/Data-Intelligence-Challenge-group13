@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 
 # SMALL_ENOUGH is referred to by the mathematical symbol theta in equations
@@ -106,6 +108,34 @@ class State:
 
         return reward
 
+    def get_neighbouring_states(self):
+        moves = list(self.dirs.values())
+        states = {}
+        for move in moves:
+            new_move = tuple(np.array(self.pos) + np.array(move))
+            if new_move[0] < self.grid.cells.shape[0] and new_move[1] < self.grid.cells.shape[1] and \
+                    new_move[0] >= 0 and new_move[1] >= 0:
+                new_pos = tuple(np.array(self.pos) + dirs[self.orientation])
+                new_state = copy.deepcopy(self)
+                # Find out how we should orient ourselves:
+                new_orient = list(dirs.keys())[list(dirs.values()).index(self.grid.cells[new_move])]
+                # Orient ourselves towards the dirty tile:
+                while new_orient != new_state.orientation:
+                    # If we don't have the wanted orientation, rotate clockwise until we do:
+                    # print('Rotating right once.')
+                    new_state.rotate('r')
+
+                # Only move to non-blocked tiles:
+                if new_state.grid.cells[new_pos] >= 0:
+                    tile_after_move = new_state.grid.cells[new_pos]
+                    new_state.grid.cells[new_state.pos] = 0
+                    new_state.grid.cells[new_pos] = new_state.orients[new_state.orientation]
+                    new_state.pos = new_pos
+                    states.add(new_state)
+                    if tile_after_move == 3:
+                        self.alive = False
+        return states
+
     def get_transition_probs(self, action):
         state_primes = self.get_neighbouring_states()
         reward = self.get_reward(action)
@@ -135,4 +165,3 @@ def robot_epoch(robot):
         robot.rotate('r')
     # Move:
     robot.move()
-    #handle negative cases
