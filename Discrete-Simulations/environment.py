@@ -261,7 +261,7 @@ class State:
     def get_action_reward(self, action):
         state_primes = self.get_neighbouring_states() # Excludes obstacles and walls
         transitions = []
-        new_pos = tuple(np.array(self.pos) + self.dirs[action])
+        new_pos = tuple(np.array(self.pos) + dirs[action])
 
         # Getting the transition probabilities
         for state_prime in state_primes:
