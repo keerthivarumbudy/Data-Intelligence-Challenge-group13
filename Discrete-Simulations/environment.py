@@ -412,27 +412,32 @@ class SmartRobot(Robot):
             iteration_counter += 1
             print("iteration:", iteration_counter, "biggest_change:", biggest_change, "state:", biggest_change_state)
             print(V)
+        self.all_states = all_states
         return V
 
     def calculate_policy(self):
         policy = {}
-        for s_key in self.V.keys():
-            # Transforming string representation of grid into numpy array
-            current_grid_vals = np.array([i.strip(" ][").split() for i in s_key[0].split("\n")], dtype=np.float)
-            current_grid = Grid(n_rows=current_grid_vals.shape[0], n_cols=current_grid_vals.shape[1])
-            current_grid.cells = current_grid_vals
+        for s_key in self.all_states.keys():
+            # # Transforming string representation of grid into numpy array
+            # current_grid_vals = np.array([i.strip(" ][").split() for i in s_key[0].split("\n")], dtype=np.float)
+            # current_grid = Grid(n_rows=current_grid_vals.shape[0], n_cols=current_grid_vals.shape[1])
+            # current_grid.cells = current_grid_vals
+            #
+            # current_state = State(current_grid, s_key[1], self.orientation, self.p_move, self.battery_drain_p,
+            #                       self.battery_drain_lam)
 
-            current_state = State(current_grid, s_key[1], self.orientation, self.p_move, self.battery_drain_p,
-                                  self.battery_drain_lam)
+            current_state = self.all_states[s_key]
 
             nb_states = current_state.get_neighbouring_states()
 
             best_value = float('-inf')
             best_action = ""
-
+            print("Current state")
+            print(current_state.grid.cells)
             for s in nb_states:
+                print(s.grid.cells)
                 grid_key, pos_key = get_state_key(s)
-                s_val = self.V[grid_key, pos_key]
+                s_val = self.V[(grid_key, pos_key)]
                 if s_val > best_value:
                     best_value = s_val
                     best_action = s.orientation
