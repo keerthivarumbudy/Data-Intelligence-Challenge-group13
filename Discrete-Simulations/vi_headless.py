@@ -1,19 +1,20 @@
 # Import our robot algorithm to use in this simulation:
 import copy
 import time
+import numpy as np
+from environment import State, Grid, get_state_key
 
 from robot_configs.value_iteration_robot import robot_epoch
 import pickle
 from environment import Robot, SmartRobot
 import matplotlib.pyplot as plt
 
-grid_file = 'death.grid' #simple-random-house-0.grid'
+grid_file = 'death.grid'  # simple-random-house-0.grid'
 # Cleaned tile percentage at which the room is considered 'clean':
 stopping_criteria = 100
 
-
 with open(f'grid_configs/{grid_file}', 'rb') as f:
-        grid = pickle.load(f)
+    grid = pickle.load(f)
 
 # Spawn the robot at (1,1) facing north with battery drainage enabled:
 print("The grid is:", grid.cells)
@@ -21,21 +22,28 @@ robot = SmartRobot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_d
 print("ROBOT.V=", robot.V)
 print("ROBOT.Policy=", robot.policy)
 
-def print_V_policy(V, P):
-    for s_key in list(V.keys())[:20]:
+
+def print_V_policy(robot):
+    for s_key in list(robot.all_states.keys())[:20]:
+
+        current_state = robot.all_states[s_key]
+        print("GRID: \n", current_state.grid.cells)
+        print("POS: ", current_state.pos)
+        print("VALUE: ", robot.V[s_key])
+        print("POLICY: ", robot.policy[s_key])
+
+        nb_states = current_state.get_neighbouring_states()
+        print(robot.policy[s_key])
+        for s in nb_states:
+            print("NEIGHBOR")
+            print(s.grid.cells)
+            print(s.pos)
+            grid_key, pos_key = get_state_key(s)
+            s_val = robot.V[(grid_key, pos_key)]
+            print(s_val)
 
 
-        # Transforming string representation of grid into numpy array
-        current_grid_vals = np.array([i.strip(" ][").split() for i in s_key[0].split("\n")], dtype=np.float)
-        current_grid = Grid(n_rows=current_grid_vals.shape[0], n_cols=current_grid_vals.shape[1])
-        current_grid.cells = current_grid_vals
-        print("GRID: ", current_grid.cells)
-        print("VALUE: ", V[s_key])
-        current_state = State(current_grid, s_key[1], self.orientation, self.p_move, self.battery_drain_p,
-                              self.battery_drain_lam)
-    print("POLICY: ", P[s_key])
-
-print_V_policy(robot.V, robot.policy)
+print_V_policy(robot)
 
 # Keep track of some statistics:
 efficiencies = []
@@ -43,7 +51,7 @@ n_moves = []
 deaths = 0
 cleaned = []
 
-#Run 100 times:
+# Run 100 times:
 # for i in range(100):
 #     # Open the grid file.
 #     # (You can create one yourself using the provided editor).

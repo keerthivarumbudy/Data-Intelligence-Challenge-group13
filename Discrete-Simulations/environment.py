@@ -432,10 +432,9 @@ class SmartRobot(Robot):
 
             best_value = float('-inf')
             best_action = ""
-            print("Current state")
-            print(current_state.grid.cells)
+
             for s in nb_states:
-                print(s.grid.cells)
+
                 grid_key, pos_key = get_state_key(s)
                 s_val = self.V[(grid_key, pos_key)]
                 if s_val > best_value:
