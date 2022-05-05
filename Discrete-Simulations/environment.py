@@ -1,6 +1,6 @@
 import copy
 import random
-
+import ast
 import numpy as np
 
 SMALL_ENOUGH = 1e-3
@@ -251,7 +251,7 @@ class State:
                     # If we don't have the wanted orientation, rotate clockwise until we do:
                     # print('Rotating right once.')
                     new_state.rotate('r')
-
+                #print(new_state.grid.cells)
                 # Only move to non-blocked tiles:
                 if new_state.grid.cells[new_pos] >= 0:
                     tile_after_move = new_state.grid.cells[new_pos]
@@ -288,6 +288,12 @@ def is_terminal(state):
     return not np.isin(g, [1, 2]).any()
 
 
+def get_state_key(state):
+    # Create a copy of grid with current position set to -10 to be used as index for V matrix
+    grid_key = copy.deepcopy(state.grid.cells)
+    grid_key[state.pos] = -10
+    return (str(grid_key), state.pos)
+
 def best_action_value(V, s, gamma):
     # finds the highest value action (max_a) from state s, returns the action and value
     best_a = None
@@ -299,8 +305,9 @@ def best_action_value(V, s, gamma):
         sum_a = 0
         for (prob, r, state_prime) in state_primes:
             state_prime_value = 0
-            if (str(state_prime.grid.cells), state_prime.pos) in V:
-                state_prime_value = V[(str(state_prime.grid.cells), state_prime.pos)]
+            grid_key, pos_key = get_state_key(state_prime)
+            if (grid_key, pos_key) in V:
+                state_prime_value = V[(grid_key, pos_key)]
 
             sum_a += prob * (r + (gamma * state_prime_value))
 
@@ -324,24 +331,29 @@ def evaluate_state(state, V, gamma, all_states):
     """
 
     if not state.alive: # reached a death tile
-        V[(str(state.grid.cells), state.pos)] = -1000  # high negative value for death state
-        all_states[(str(state.grid.cells), state.pos)] = state
-        print("REACHED death state", (str(state.grid.cells), state.pos))
+        grid_key, pos_key = get_state_key(state)
+        V[(grid_key, pos_key)] = -1000  # high negative value for death state
+        all_states[(grid_key, pos_key)] = state
+        print("REACHED death state", (grid_key, pos_key))
         return V
 
     if is_terminal(state):
-        V[(str(state.grid.cells), state.pos)] = 1000  # high value for final state
-        all_states[(str(state.grid.cells), state.pos)] = state
-        print("REACHED terminal state", (str(state.grid.cells), state.pos))
+        # Create a copy of grid with current position set to -10 to be used as index for V matrix
+        grid_key, pos_key = get_state_key(state)
+        V[(grid_key, pos_key)] = 1000  # high value for final state
+        all_states[(grid_key, pos_key)] = state
+        print("REACHED terminal state", (grid_key, pos_key))
         return V
 
     best_a, best_val = best_action_value(V, state, gamma)
 
-    V[(str(state.grid.cells), state.pos)] = best_val
-    all_states[(str(state.grid.cells), state.pos)] = state
+    grid_key, pos_key = get_state_key(state)
+    V[(grid_key, pos_key)] = best_val
+    all_states[(grid_key, pos_key)] = state
 
     for new_state in state.get_neighbouring_states():
-        if not (str(new_state.grid.cells), new_state.pos) in V:  # check this state is not seen before
+        grid_key, pos_key = get_state_key(new_state)
+        if not (grid_key, pos_key) in V:  # check this state is not seen before
             V = evaluate_state(new_state, V, gamma, all_states)
     return V
 
@@ -365,7 +377,7 @@ class SmartRobot(Robot):
         self.vision = vision
         self.gamma = gamma
         self.V = self.calculate_values()
-        # self.policy = self.calculate_policy()
+        self.policy = self.calculate_policy()
 
     def calculate_values(self):
         print("Start calculating V ")
@@ -387,9 +399,11 @@ class SmartRobot(Robot):
         while biggest_change > SMALL_ENOUGH:
             biggest_change = 0
             for s in all_states.values().__reversed__():
-                old_v = V[(str(s.grid.cells), s.pos)]
+                # Create a copy of grid with current position set to -10 to be used as index for V matrix
+                grid_key, pos_key = get_state_key(s)
+                old_v = V[(grid_key, pos_key)]
                 _, new_v = best_action_value(V, s, self.gamma)
-                V[(str(s.grid.cells), s.pos)] = new_v
+                V[(grid_key, pos_key)] = new_v
 
                 if (np.abs(old_v - new_v) > biggest_change):
                     biggest_change = np.abs(old_v - new_v)
@@ -400,16 +414,33 @@ class SmartRobot(Robot):
             print(V)
         return V
 
-    # def calculate_policy(self):
-    #     current_state = State(self.grid, self.pos, self.orientation, self.p_move, self.battery_drain_p,
-    #                           self.battery_drain_lam)
-    #     possible_states = current_state.get_possible_states()
-    #     policy = {}
-    #     # find a policy that leads to optimal value function
-    #     for s in possible_states:
-    #         # loop through all possible actions to find the best current action
-    #         best_a, _ = best_action_value(self.V, s)
-    #         policy[(s.grid.cells, s.pos)] = best_a
-    #     return policy
+    def calculate_policy(self):
+        policy = {}
+        for s_key in self.V.keys():
+            # Transforming string representation of grid into numpy array
+            current_grid_vals = np.array([i.strip(" ][").split() for i in s_key[0].split("\n")], dtype=np.float)
+            current_grid = Grid(n_rows=current_grid_vals.shape[0], n_cols=current_grid_vals.shape[1])
+            current_grid.cells = current_grid_vals
+
+            current_state = State(current_grid, s_key[1], self.orientation, self.p_move, self.battery_drain_p,
+                                  self.battery_drain_lam)
+
+            nb_states = current_state.get_neighbouring_states()
+
+            best_value = float('-inf')
+            best_action = ""
+
+            for s in nb_states:
+                grid_key, pos_key = get_state_key(s)
+                s_val = self.V[grid_key, pos_key]
+                if s_val > best_value:
+                    best_value = s_val
+                    best_action = s.orientation
+
+            policy[s_key] = best_action
+
+        return policy
+
+
 
 # {(grid, pos): best_a, }

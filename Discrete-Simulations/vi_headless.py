@@ -18,6 +18,7 @@ with open(f'grid_configs/{grid_file}', 'rb') as f:
 print("The grid is:", grid.cells)
 robot = SmartRobot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, gamma=0.9)
 print("ROBOT.V=", robot.V)
+print("ROBOT.Policy=", robot.policy)
 
 # # Keep track of some statistics:
 # efficiencies = []
