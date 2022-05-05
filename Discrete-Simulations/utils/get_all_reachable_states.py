@@ -1,5 +1,5 @@
 from copy import deepcopy
-from pprint import pprint
+from collections import OrderedDict
 
 from utils.utility import *
 
@@ -102,17 +102,17 @@ def get_state_from_action(grid, action):
                     new_grid[y+direction[1]][x+direction[0]] = materials['cell_robot_dead_body']
                     new_grid[y][x] = materials['cell_clean']
                     
-                    
                 else: 
                     new_grid[y+direction[1]][x+direction[0]] = materials['cell_robot_n']
                     new_grid[y][x] = materials['cell_clean']
+                    
                 break
     return new_grid
     
     
     
     
-def generate_reachable_states(state, state_dict = {}):
+def generate_reachable_states(state, state_dict = OrderedDict()):
     """
     Given a 2D grid (list of lists), returns all reachable states with some metadata.
     
@@ -149,10 +149,11 @@ def generate_reachable_states(state, state_dict = {}):
         if new_state_id not in state_dict:
             state_dict = generate_reachable_states(new_state, state_dict)
         
-        if (new_state_id not in state_dict[state_id]['immediately_reachable_states']):
-            state_dict[state_id]['immediately_reachable_states'][new_state_id] = {'direction': [direction]}
-        else:
-            state_dict[state_id]['immediately_reachable_states'][new_state_id]['direction'].append(direction)
+        if (direction not in state_dict[state_id]['immediately_reachable_states']):
+            state_dict[state_id]['immediately_reachable_states'][direction] = new_state_id
+        #     state_dict[state_id]['immediately_reachable_states'][new_state_id] = {'direction': [direction]}
+        # else:
+        #     state_dict[state_id]['immediately_reachable_states'][new_state_id]['direction'].append(direction)
     return state_dict
 
 
@@ -160,7 +161,7 @@ def add_location_to_grid(grid, location):
     """
     Given a 2D grid (list of lists), and a location, adds a robot to the grid.
     """
-    grid[location[0]][location[1]] = materials['cell_robot_n']
+    grid[location[1]][location[0]] = materials['cell_robot_n']
     return grid
 
 

@@ -2,6 +2,7 @@ import numpy as np
 import random
 
 from utils.utility import *
+from utils.get_all_reachable_states import *
 
 SMALL_ENOUGH = 1e-3
 ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
@@ -125,11 +126,8 @@ class Grid:
         self.n_cols = n_cols
         # Building the boundary of the grid:
         self.cells = np.ones((n_cols, n_rows))
-        print(self.cells)
         self.cells[0, :] = self.cells[-1, :] = -1
-        print(self.cells)
         self.cells[:, 0] = self.cells[:, -1] = -1
-        print(self.cells)
 
     def put_obstacle(self, x0, x1, y0, y1, from_edge=1):
         self.cells[max(x0, from_edge):min(x1 + 1, self.n_cols - from_edge),
@@ -251,7 +249,7 @@ class DumbRobot(Robot):
         self.grid = grid
         self.orients = {'n': -3, 'e': -4, 's': -5, 'w': -6}
         self.dirs = {'n': (0, -1), 'e': (1, 0), 's': (0, 1), 'w': (-1, 0)}
-        self.grid.cells[pos] = self.orients[self.orientation]
+        # self.grid.cells[pos] = self.orients[self.orientation]
         self.history = [[], []]
         self.p_move = p_move
         self.battery_drain_p = battery_drain_p
@@ -279,11 +277,10 @@ class DumbRobot(Robot):
         """
         Generate state id from grid and position
         :param grid:[[]]
-        :param pos: (int, int)
         
         :return state_id: string
         """
-        pass
+        return get_state_id(self.grid.cells)
         
     def generate_reachable_states(self):
         """
@@ -298,11 +295,10 @@ class DumbRobot(Robot):
         :return:
         {
             "state_id": {
-                "loc": (index_x, index_y), 
                 "grid": [[]],
                 "immediately_reachable_states": {
-                    "N": state_id,
-                    "S": ....
+                    state_id: {'direction': [dirs]},
+                    state_id: ....
                 }
             }, 
 
@@ -312,52 +308,25 @@ class DumbRobot(Robot):
 
         }
         """
-        from collections import OrderedDict
-        new_dict = OrderedDict({
-            "0": {
-                "loc": (1,1), 
-                "grid": self.grid,
-                "immediately_reachable_states": {
-                    "n": "1",
-                    "e": "2",
-                    "s": "3",
-                    "w": "4"
-                }
-            },
-            "1": {
-                "loc": (1, 0), 
-                "grid": self.grid,
-                "immediately_reachable_states": {
-                    "n": "1",
-                    "s": "1"
-                }
-            },
-            "2": {
-                "loc": (2, 1), 
-                "grid": self.grid,
-                "immediately_reachable_states": {
-                    "n": "1",
-                    "s": "1"
-                }
-            },
-            "3": {
-                "loc": (1, 2), 
-                "grid": [[]],
-                "immediately_reachable_states": {
-                    "n": "1",
-                    "s": "1"
-                }
-            },
-            "4": {
-                "loc": (0, 1), 
-                "grid": self.grid,
-                "immediately_reachable_states": {
-                    "n": "1",
-                    "s": "1"
-                }
-            }
-        })
-        return new_dict
+        print('ORIGINAL GRID', self.grid.cells)
+        self.grid.cells = add_location_to_grid(self.grid.cells, self.pos)
+        print('POSITION GRID', self.grid.cells)
+        state_dict = generate_reachable_states(self.grid.cells)
+        return state_dict
+    
+    def print_state_dict(self):
+        print('REACHABLE STATES')
+        for key in self.S.keys():
+            print('\n',key)
+            try:
+                if self.S[key]['is_terminal']:
+                    print('TERMINAL')
+                    print('reason:',self.S[key]['terminal_reason'])
+            except:
+                print('NOT TERMINAL')
+            print('reachable states:')
+            for sub_key in self.S[key]['immediately_reachable_states'].keys():
+                print(sub_key, self.S[key]['immediately_reachable_states'][sub_key])
     
     def init_policy(self):
         # randomly assign policies
@@ -375,6 +344,49 @@ class DumbRobot(Robot):
         return sum(immediate_final_rewards)
 
     # Policy Evaluation
+    
+    def calculate_move(self, state_id, action):
+        # get ids of immediate reachable states
+        immediate_state_ids = self.S[state_id]["immediately_reachable_states"]
+        # get index of immediate_state_ids in self.S
+        immediate_state_ids_index = [list(self.S).index(i) for i in immediate_state_ids.values()]
+        
+        # check for terminal states
+        try:
+            if self.S[state_id]['is_terminal']:
+                if self.S[state_id]['terminal_reason'] == 'goal':
+                    return 1.0, 1.0
+                elif self.S[state_id]['terminal_reason'] == 'death':
+                    return -10.0, -10.0
+        except:
+            if immediate_state_ids[action] == state_id:
+                return self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(action)]], -1.0
+            
+        # get v(s')
+        state_value = self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(action)]]
+
+        # get reward for each immediate state
+        immediate_rewards = [get_reward_dict(self.S[state_id], orientation) for orientation in orients.keys()]
+        
+        # get the value of each immediate state
+        immediate_values = [self.calculate_move(id, poss_action)[1] for id, poss_action in zip(list(immediate_state_ids.values()), list(immediate_state_ids.keys()))]
+        
+        # aggregate rewards and future values of state
+        immediate_aggs = [reward + self.gamma * value for reward, value in zip(immediate_rewards, immediate_values)]
+        
+        state_future_value = self.stochastic_final_reward(action, immediate_aggs)
+        
+        print('state_id:', state_id)
+        print('immediate_state_ids', immediate_state_ids)
+        print('immediate_state_ids_index', immediate_state_ids_index)
+        print('current_action', action)
+        print('state_value', state_value)
+        print('immediate_rewards', immediate_rewards)
+        print('immediate_values', immediate_values)
+        print('immediate_aggs', immediate_aggs)
+        print('immediate_final_rewards', state_future_value)
+        
+        return state_value, state_future_value
 
     def calculate_values(self, state_id):
         # calculate the value of each state
@@ -384,41 +396,24 @@ class DumbRobot(Robot):
         # get π(a|s)
         optimal_state_policy = self.policy[state_ind]
         
-        # get ids of immediate reachable states
-        immediate_state_ids = self.S[state_id]["immediately_reachable_states"]
-        # get index of immediate_state_ids in self.S
-        immediate_state_ids_index = [list(self.S).index(i) for i in immediate_state_ids.values()]
-        
-        # get v(s')
-        state_value = self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(optimal_state_policy)]]
-
-        # get reward for each immediate state
-        immediate_rewards = [get_reward_dict(self.S[state_id], orientation) for orientation in orients.keys()]
-        
-        # get the value of each immediate state
-        immediate_values = [self.calculate_values(id) for id in list(immediate_state_ids.values())]
-        
-        # aggregate rewards and future values of state
-        immediate_aggs = [reward + self.gamma * value for reward, value in zip(immediate_rewards, immediate_values)]
-        
-        immediate_final_rewards = self.stochastic_final_reward(optimal_state_policy, immediate_aggs)
-        
-        # sum up to get final future value for state
-        state_future_value = sum(immediate_final_rewards)
+        state_value, state_future_value = self.calculate_move(state_id, optimal_state_policy)
         
         return state_value, state_future_value
-            
+        
     def sweep_until_convergence(self, convergence_threshold=0.01):
         # while |v′(s)−v(s)| < convergence_threshold
+        
+        list_S = list(self.S)
+        state_ind = list_S.index(get_state_id(self.grid.cells))
         
         old_values = self.values
         new_values = old_values
         # TODO: is s current state in for loop or is it initial state?
-        while abs(new_values[self.state.pos] - old_values[self.state.pos]) < convergence_threshold:
+        while abs(new_values[state_ind] - old_values[state_ind]) < convergence_threshold:
             old_values = new_values
             
-            for s in range(self.S.keys()):
-                state_ind = self.S.index(s)
+            for s in self.S.keys():
+                state_ind = list_S.index(s)
                 old_values[state_ind], new_values[state_ind] = self.calculate_values(s)
         
         self.values = new_values
@@ -428,20 +423,22 @@ class DumbRobot(Robot):
     def update_policy(self):
         # update the policy greedily based on values of accessible states
         
+        list_S = list(self.S)
+        
         # init new policy π′(a|s)
         old_policy = self.policy
         new_policy = old_policy
-        for s in range(self.S.keys()):
-            state_ind = self.S.index(s)
+        for s in self.S.keys():
+            state_ind = list_S.index(s)
             self.values[state_ind]
             
             # get ids of immediate reachable states
             immediate_state_ids = self.S[s]["immediately_reachable_states"]
             # get index of immediate_state_ids in self.S
-            immediate_state_ids_index = [self.S.index(i) for i in immediate_state_ids.values()]
+            immediate_state_ids_index = [list_S.index(i) for i in immediate_state_ids.values()]
 
             # get reward for each immediate state
-            immediate_rewards = [get_reward(self.S[s], orientation) for orientation in orients.keys()]
+            immediate_rewards = [get_reward_dict(self.S[s], orientation) for orientation in orients.keys()]
             
             # get the value of each immediate state through already updated self.values
             immediate_values = [self.values[i] for i in immediate_state_ids_index]
@@ -450,7 +447,7 @@ class DumbRobot(Robot):
             immediate_aggs = [reward + self.gamma * value for reward, value in zip(immediate_rewards, immediate_values)]
             
             # calculate final rewards for all orientations
-            possible_actions = orients.keys()
+            possible_actions = list(orients.keys())
             possible_actions_final_rewards = [self.stochastic_final_reward(action, immediate_aggs) for action in possible_actions]
             
             # find max a
@@ -471,20 +468,11 @@ if __name__ == '__main__':
     with open(f'grid_configs/simple-random-house-0.grid', 'rb') as f:
         grid = pickle.load(f)
         
-    from utils.get_all_reachable_states import *
-    import pprint
+    starting_location = (2,1)
     
-    starting_location = (1, 1)
-    grid.cells = add_location_to_grid(grid.cells, starting_location)
     print(grid.cells)
-    state_dict = generate_reachable_states(grid.cells)
-    print('REACHABLE STATES')
-    for key in state_dict.keys():
-        print('\n',key)
-        print('reachable states:')
-        for sub_key in state_dict[key]['immediately_reachable_states'].keys():
-            print(sub_key, state_dict[key]['immediately_reachable_states'][sub_key])
     robot = DumbRobot(grid, starting_location, orientation='n', battery_drain_p=0.5, battery_drain_lam=2)
+    robot.print_state_dict()
     
     # get reward for each immediate state
     immediate_rewards = [1,1,1,1]
@@ -497,7 +485,16 @@ if __name__ == '__main__':
         
     # print(robot.stochastic_final_reward('e', immediate_aggs))
     
-    # print(robot.policy)
-    # print(robot.values)
+    print('nr of reachable states:', len(robot.S))
+    print('old policy:', robot.policy)
+    print('old values:', robot.values)
     
-    # print(robot.calculate_values("0"))
+    # state_ind = list(robot.S).index(get_state_id(robot.grid.cells))
+    # _, robot.values[state_ind] = robot.calculate_values(get_state_id(robot.grid.cells))
+    # print('new values:', robot.values)
+    # print(robot.update_policy())
+    # print('new policy:', robot.policy)
+    # _, robot.values[state_ind] = robot.calculate_values(get_state_id(robot.grid.cells))
+    # print('new values:', robot.values)
+    
+    print(robot.sweep_until_convergence())

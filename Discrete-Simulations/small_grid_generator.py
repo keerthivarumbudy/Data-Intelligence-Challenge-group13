@@ -13,6 +13,7 @@ for k in range(1):
     # Create the corridor:
     corr_y0 = int(height / 2)
     corr_y1 = int(height / 2) + 2
+    grid.put_singular_obstacle(1,1)
     #
     # n_rooms = 5
     # # Get upper rooms:

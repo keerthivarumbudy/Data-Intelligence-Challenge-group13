@@ -30,7 +30,11 @@ def get_reward(state, action):
 
 def get_reward_dict(state_dict, action):
     # Get the possible values (dirty/clean) of the tiles we can end up at after a move:
-    new_pos = tuple(np.array(state_dict['loc']) + dirs[action])
+    robot_pos = next((((list(row).index(-3.)), y)
+      for y, row in enumerate(state_dict['grid'])
+      if -3. in row),
+     None)
+    new_pos = tuple(map(sum, zip(robot_pos, dirs[action])))
 
     reward_dict = {
         -3: -2,
@@ -41,7 +45,7 @@ def get_reward_dict(state_dict, action):
         2: 10,
         3: -10
     }
-    state_reward = reward_dict[state_dict['grid'].cells[new_pos]]
+    state_reward = reward_dict[state_dict['grid'][new_pos[1]][new_pos[0]]]
 
     # modified from environment.py
     # TODO: correct?
