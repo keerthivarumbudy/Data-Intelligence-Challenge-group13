@@ -8,14 +8,17 @@ from robot_configs.value_iteration_robot import robot_epoch
 import pickle
 from environment import Robot, SmartRobot
 import matplotlib.pyplot as plt
-
-grid_file = 'death.grid'  # simple-random-house-0.grid'
+import sys
+grid_file = 'death.grid' #'example-random-house-0.grid'#'death.grid'  # simple-random-house-0.grid'
 # Cleaned tile percentage at which the room is considered 'clean':
 stopping_criteria = 100
-
+print(sys.getrecursionlimit())
 with open(f'grid_configs/{grid_file}', 'rb') as f:
     grid = pickle.load(f)
 
+# Calculate the best stopping_criteria:
+n_total_tiles = (grid.cells >= 0).sum()
+death_tiles = (grid.cells == 3).sum()
 # Spawn the robot at (1,1) facing north with battery drainage enabled:
 print("The grid is:", grid.cells)
 robot = SmartRobot(grid, (1, 2), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, gamma=0.9)
@@ -24,7 +27,7 @@ print("ROBOT.Policy=", robot.policy)
 
 
 def print_V_policy(robot):
-    for s_key in list(robot.all_states.keys())[:20]:
+    for s_key in list(robot.all_states.keys()):
 
         current_state = robot.all_states[s_key]
         print("GRID: \n", current_state.grid.cells)

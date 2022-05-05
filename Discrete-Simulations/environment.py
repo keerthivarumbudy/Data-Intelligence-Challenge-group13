@@ -218,9 +218,10 @@ class State:
         state_reward = reward_dict[self.grid.cells[self.pos]]
 
         dirty = (self.grid.cells >= 1).sum()
+        death_tiles = (self.grid.cells == 3).sum()
 
         if (self.grid.cells[self.pos] == 0): # current position is clean
-            if (dirty == 0): # no dirty cells
+            if ((dirty-death_tiles) == 0): # no dirty cells
                 # this is a terminal state. give high reward
                 state_reward = 20
 
@@ -243,6 +244,7 @@ class State:
             new_pos = tuple(np.array(self.pos) + np.array(move))
             if new_pos[0] < self.grid.cells.shape[0] and new_pos[1] < self.grid.cells.shape[1] and \
                     new_pos[0] >= 0 and new_pos[1] >= 0 and self.grid.cells[new_pos] >= 0:
+                # Create a copy of current state
                 new_state = copy.deepcopy(self)
                 # Find out how we should orient ourselves:
                 new_orient = list(dirs.keys())[list(dirs.values()).index(move)]
@@ -318,6 +320,12 @@ def best_action_value(V, s, gamma):
     return best_a, best_value
 
 
+def is_state_seen_before(state, new_state):
+    b =  ((state.pos==new_state.pos) and (state.grid==new_state.grid).all())
+    if b:
+        print(state.pos, new_state.pos, state.grid, new_state.grid)
+    return b
+
 def evaluate_state(state, V, gamma, all_states):
     """
     computes all possible states the robot can get to from a given state by
@@ -342,7 +350,12 @@ def evaluate_state(state, V, gamma, all_states):
         grid_key, pos_key = get_state_key(state)
         V[(grid_key, pos_key)] = 1000  # high value for final state
         all_states[(grid_key, pos_key)] = state
-        print("REACHED terminal state", (grid_key, pos_key))
+        # value of the current cell is not considered in the Key of V matrix.
+        # looking at neighbours for the states identical to terminal state
+        for new_state in state.get_neighbouring_states():
+            grid_key, pos_key = get_state_key(new_state)
+            if not (grid_key, pos_key) in V:  # check this state is not seen before
+                V = evaluate_state(new_state, V, gamma, all_states)
         return V
 
     best_a, best_val = best_action_value(V, state, gamma)
@@ -387,14 +400,11 @@ class SmartRobot(Robot):
         all_states = {}
         # find all states and compute V matrix (one iteration over all states)
         V = evaluate_state(current_state, V, self.gamma, all_states)
-        sorted(V.keys(), reverse=True)
         print("robot.v count:", len(V.keys()))
         print("robot.all_states count:", len(all_states.keys()))
 
         biggest_change = np.inf
         iteration_counter = 0
-        biggest_change_state = current_state
-        print(V)
         # repeat until convergence
         while biggest_change > SMALL_ENOUGH:
             biggest_change = 0
@@ -404,15 +414,11 @@ class SmartRobot(Robot):
                 old_v = V[(grid_key, pos_key)]
                 _, new_v = best_action_value(V, s, self.gamma)
                 V[(grid_key, pos_key)] = new_v
-
-                if (np.abs(old_v - new_v) > biggest_change):
-                    biggest_change = np.abs(old_v - new_v)
-                    biggest_change_state = (str(s.grid.cells), s.pos)
-                # biggest_change = max(biggest_change, np.abs(old_v - new_v))
+                biggest_change = max(biggest_change, np.abs(old_v - new_v))
             iteration_counter += 1
-            print("iteration:", iteration_counter, "biggest_change:", biggest_change, "state:", biggest_change_state)
-            print(V)
+            print("iteration:", iteration_counter, "biggest_change:", biggest_change)
         self.all_states = all_states
+        print("V matrix:", V)
         return V
 
     def calculate_policy(self):
