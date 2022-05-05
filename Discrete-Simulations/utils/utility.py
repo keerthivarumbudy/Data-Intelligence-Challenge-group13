@@ -8,6 +8,7 @@ def get_reward(state, action):
     new_pos = tuple(np.array(state.pos) + dirs[action])
 
     reward_dict = {
+        -3: -2,
         -2: -2,
         -1: -2,
         0: -1,

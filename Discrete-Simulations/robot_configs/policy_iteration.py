@@ -1,6 +1,6 @@
 import numpy as np
 
-from robot_configs.utility import *
+from utils.utility import *
 
 class State:
     # state includes the robot's position and orientation

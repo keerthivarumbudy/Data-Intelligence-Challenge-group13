@@ -1,6 +1,8 @@
 from copy import deepcopy
 from pprint import pprint
 
+from utils.utility import *
+
 materials =  {'cell_clean': 0,
 'cell_wall': -1,
 'cell_obstacle': -2, 
@@ -11,16 +13,14 @@ materials =  {'cell_clean': 0,
 'cell_robot_dead_body': 4,
 }
 
-directions = {'N': (0, -1), 'S': (0, 1), 'E': (1, 0), 'W': (-1, 0)}
-
-# a 4x4 grid to test with
-grid = [[-1, -1, -1, -1],
-        [-1, -3, 1, -1],
-        [-1, 1, 1, -1],
-        [-1, -1, -1, -1]]
+# # a 4x4 grid to test with
+# grid = [[-1, -1, -1, -1],
+#         [-1, -3, 1, -1],
+#         [-1, 1, 1, -1],
+#         [-1, -1, -1, -1]]
         
         
-def get_state_id(state):
+def get_state_id(grid):
     """
     Given a 2D grid (list of lists), returns a flattened ID corresponding to that grid. 
     
@@ -36,35 +36,35 @@ def get_state_id(state):
     """
     
     # Good to note, length of strings does not impact dictionary performance.
-    return ''.join([str(i) for i in state])
+    return ''.join([str(i) for i in grid])
     
-def all_clean(state):
+def all_clean(grid):
     """
     Given a 2D grid (list of lists), returns True if there are no dirty cells.
     """
-    for row in state:
+    for row in grid:
         for cell in row:
             if cell == 1:
                 return False
     return True
     
-def robot_dead(state):
+def robot_dead(grid):
     """
     Given a 2D grid (list of lists), returns True if the robot is dead.
     """
-    for row in state:
+    for row in grid:
         for cell in row:
             if cell == materials['cell_robot_n']:
                 return False
     return True
     
-def get_state_from_action(state, action):
+def get_state_from_action(grid, action):
     """
-    Given a 2D grid (list of lists), and an action, returns the state that results from that action.
+    Given a 2D grid (list of lists), and an action, returns the grid that results from that action.
     
     Parameters
     ----------
-    state : [[int]]
+    grid : [[int]]
         A 2D grid (list of lists) of integers.
         
     action : str
@@ -73,38 +73,41 @@ def get_state_from_action(state, action):
     Returns
     -------
     [[int]]
-        The state that results from the action.
+        The grid that results from the action.
         
     Raises
     ------
     ValueError
-        If the action is not one of the four cardinal directions.
+        If the action is not one of the four cardinal dirs.
     """
     
-    if action not in directions:
-        raise ValueError('Action must be one of the four cardinal directions.')
+    if action not in dirs:
+        raise ValueError('Action must be one of the four cardinal dirs.')
         
     # Get the direction
-    direction = directions[action]
+    direction = dirs[action]
+    # direction is a tuple of (x, y)
     
-    # Get the new state
-    new_state = deepcopy(state)
-    for i in range(len(state)):
-        for j in range(len(state[i])):
-            if state[i][j] == materials['cell_robot_n']:
-                if (state[i+direction[0]][j+direction[1]] == materials['cell_wall'] or state[i+direction[0]][j+direction[1]] == materials['cell_obstacle']):
-                    return new_state
+    # Get the new grid
+    new_grid = deepcopy(grid)
+    for y in range(len(grid)):
+        # looping through rows (y)
+        for x in range(len(grid[y])):
+            # looping through columns (x)
+            if grid[y][x] == materials['cell_robot_n']:
+                if (grid[y+direction[1]][x+direction[0]] == materials['cell_wall'] or grid[y+direction[1]][x+direction[0]] == materials['cell_obstacle']):
+                    return new_grid
                     
-                elif(state[i+direction[0]][j+direction[1]] == materials['cell_death']):
-                    new_state[i+direction[0]][j+direction[1]] = materials['cell_robot_dead_body']
-                    new_state[i][j] = materials['cell_clean']
+                elif(grid[y+direction[1]][x+direction[0]] == materials['cell_death']):
+                    new_grid[y+direction[1]][x+direction[0]] = materials['cell_robot_dead_body']
+                    new_grid[y][x] = materials['cell_clean']
                     
                     
                 else: 
-                    new_state[i+direction[0]][j+direction[1]] = materials['cell_robot_n']
-                    new_state[i][j] = materials['cell_clean']
+                    new_grid[y+direction[1]][x+direction[0]] = materials['cell_robot_n']
+                    new_grid[y][x] = materials['cell_clean']
                 break
-    return new_state
+    return new_grid
     
     
     
@@ -139,8 +142,8 @@ def generate_reachable_states(state, state_dict = {}):
         state_dict[state_id]['terminal_reason'] = 'death'
         return state_dict
         
-    # Check all possible directions
-    for direction in directions: 
+    # Check all possible dirs
+    for direction in dirs.keys(): 
         new_state = get_state_from_action(state, direction)
         new_state_id = get_state_id(new_state)
         if new_state_id not in state_dict:
@@ -153,5 +156,14 @@ def generate_reachable_states(state, state_dict = {}):
     return state_dict
 
 
-# print number of keys in the dictionary
-print(generate_reachable_states(grid))
+def add_location_to_grid(grid, location):
+    """
+    Given a 2D grid (list of lists), and a location, adds a robot to the grid.
+    """
+    grid[location[0]][location[1]] = materials['cell_robot_n']
+    return grid
+
+
+
+# # print number of keys in the dictionary
+# print(generate_reachable_states(grid))

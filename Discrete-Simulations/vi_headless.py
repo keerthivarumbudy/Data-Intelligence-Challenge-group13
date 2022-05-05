@@ -6,7 +6,7 @@ import pickle
 from environment import Robot, SmartRobot
 import matplotlib.pyplot as plt
 
-grid_file = 'house.grid'
+grid_file = 'simple-random-house-0.grid'
 # Cleaned tile percentage at which the room is considered 'clean':
 stopping_criteria = 100
 

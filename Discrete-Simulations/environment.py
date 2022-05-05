@@ -1,7 +1,7 @@
 import numpy as np
 import random
 
-from robot_configs.utility import *
+from utils.utility import *
 
 SMALL_ENOUGH = 1e-3
 ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
@@ -125,8 +125,11 @@ class Grid:
         self.n_cols = n_cols
         # Building the boundary of the grid:
         self.cells = np.ones((n_cols, n_rows))
+        print(self.cells)
         self.cells[0, :] = self.cells[-1, :] = -1
+        print(self.cells)
         self.cells[:, 0] = self.cells[:, -1] = -1
+        print(self.cells)
 
     def put_obstacle(self, x0, x1, y0, y1, from_edge=1):
         self.cells[max(x0, from_edge):min(x1 + 1, self.n_cols - from_edge),
@@ -465,9 +468,23 @@ class DumbRobot(Robot):
     
 if __name__ == '__main__':
     import pickle
-    with open(f'grid_configs/example-random-house-0.grid', 'rb') as f:
+    with open(f'grid_configs/simple-random-house-0.grid', 'rb') as f:
         grid = pickle.load(f)
-    robot = DumbRobot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2)
+        
+    from utils.get_all_reachable_states import *
+    import pprint
+    
+    starting_location = (1, 1)
+    grid.cells = add_location_to_grid(grid.cells, starting_location)
+    print(grid.cells)
+    state_dict = generate_reachable_states(grid.cells)
+    print('REACHABLE STATES')
+    for key in state_dict.keys():
+        print('\n',key)
+        print('reachable states:')
+        for sub_key in state_dict[key]['immediately_reachable_states'].keys():
+            print(sub_key, state_dict[key]['immediately_reachable_states'][sub_key])
+    robot = DumbRobot(grid, starting_location, orientation='n', battery_drain_p=0.5, battery_drain_lam=2)
     
     # get reward for each immediate state
     immediate_rewards = [1,1,1,1]
@@ -478,9 +495,9 @@ if __name__ == '__main__':
     # aggregate rewards and future values of state
     immediate_aggs = [reward + robot.gamma * value for reward, value in zip(immediate_rewards, immediate_values)]
         
-    print(robot.stochastic_final_reward('e', immediate_aggs))
+    # print(robot.stochastic_final_reward('e', immediate_aggs))
     
-    print(robot.policy)
-    print(robot.values)
+    # print(robot.policy)
+    # print(robot.values)
     
-    print(robot.calculate_values("0"))
+    # print(robot.calculate_values("0"))
