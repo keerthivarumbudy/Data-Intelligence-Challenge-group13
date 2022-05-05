@@ -327,6 +327,7 @@ def is_state_seen_before(state, new_state):
     return b
 
 def evaluate_state(state, V, gamma, all_states):
+    print("EVALUATE STATE FOR:", state.pos, state.grid.cells)
     """
     computes all possible states the robot can get to from a given state by
     recursively tracking all moves.
@@ -348,14 +349,15 @@ def evaluate_state(state, V, gamma, all_states):
     if is_terminal(state):
         # Create a copy of grid with current position set to -10 to be used as index for V matrix
         grid_key, pos_key = get_state_key(state)
-        V[(grid_key, pos_key)] = 1000  # high value for final state
-        all_states[(grid_key, pos_key)] = state
-        # value of the current cell is not considered in the Key of V matrix.
-        # looking at neighbours for the states identical to terminal state
-        for new_state in state.get_neighbouring_states():
-            grid_key, pos_key = get_state_key(new_state)
-            if not (grid_key, pos_key) in V:  # check this state is not seen before
-                V = evaluate_state(new_state, V, gamma, all_states)
+        if not (grid_key, pos_key) in V:
+            V[(grid_key, pos_key)] = 1000  # high value for final state
+            all_states[(grid_key, pos_key)] = state
+            # value of the current cell is not considered in the Key of V matrix.
+            # looking at neighbours for the states identical to terminal state
+            for new_state in state.get_neighbouring_states():
+                grid_key, pos_key = get_state_key(new_state)
+                if not (grid_key, pos_key) in V:  # check this state is not seen before
+                    V = evaluate_state(new_state, V, gamma, all_states)
         return V
 
     best_a, best_val = best_action_value(V, state, gamma)
