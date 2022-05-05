@@ -327,7 +327,6 @@ def is_state_seen_before(state, new_state):
     return b
 
 def evaluate_state(state, V, gamma, all_states):
-    print("EVALUATE STATE FOR:", state.pos, state.grid.cells)
     """
     computes all possible states the robot can get to from a given state by
     recursively tracking all moves.
