@@ -441,6 +441,21 @@ class SmartRobot(Robot):
 
         return policy
 
+    def find_and_do_move(self):
+        current_state = State(self.grid, self.pos, self.orientation, self.p_move, self.battery_drain_p,
+                              self.battery_drain_lam)
+
+        grid_key, pos_key = get_state_key(current_state)
+
+        new_orient = self.policy[(grid_key, pos_key)]
+        while new_orient != self.orientation:
+            # If we don't have the wanted orientation, rotate clockwise until we do:
+            # print('Rotating right once.')
+            self.rotate('r')
+
+        self.move()
+
+
 
 
 # {(grid, pos): best_a, }

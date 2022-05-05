@@ -20,18 +20,18 @@ robot = SmartRobot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_d
 print("ROBOT.V=", robot.V)
 print("ROBOT.Policy=", robot.policy)
 
-# # Keep track of some statistics:
-# efficiencies = []
-# n_moves = []
-# deaths = 0
-# cleaned = []
-#
-# # Run 100 times:
+# Keep track of some statistics:
+efficiencies = []
+n_moves = []
+deaths = 0
+cleaned = []
+
+# Run 100 times:
 # for i in range(100):
 #     # Open the grid file.
 #     # (You can create one yourself using the provided editor).
 #     with open(f'grid_configs/{grid_file}', 'rb') as f:
-# #         grid = pickle.load(f)
+#         grid = pickle.load(f)
 #     # Calculate the total visitable tiles:
 #     n_total_tiles = (grid.cells >= 0).sum()
 #     # Spawn the robot at (1,1) facing north with battery drainage enabled:
