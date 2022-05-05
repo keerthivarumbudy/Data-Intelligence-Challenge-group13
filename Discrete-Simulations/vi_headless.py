@@ -16,7 +16,7 @@ with open(f'grid_configs/{grid_file}', 'rb') as f:
 
 # Spawn the robot at (1,1) facing north with battery drainage enabled:
 print("The grid is:", grid.cells)
-robot = SmartRobot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2)
+robot = SmartRobot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, gamma=0.9)
 print("ROBOT.V=", robot.V)
 
 # # Keep track of some statistics:

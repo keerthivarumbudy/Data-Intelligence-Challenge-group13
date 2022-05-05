@@ -220,10 +220,10 @@ class State:
 
         # modified from environment.py
         # TODO: correct?
-        expected_drain = self.battery_drain_p * np.random.exponential(self.battery_drain_lam)
+        #expected_drain = self.battery_drain_p * np.random.exponential(self.battery_drain_lam)
 
         # reward is reward of moving to new state + expected battery drain (negative constant)
-        reward = state_reward - expected_drain
+        reward = state_reward #- expected_drain
 
         return reward
 
@@ -371,7 +371,7 @@ class SmartRobot(Robot):
         all_states = {}
         #find all states and compute V matrix (one iteration over all states)
         V = evaluate_state(current_state, V, self.gamma, all_states)
-
+        sorted(V.keys(), reverse=True)
         print("robot.v count:", len(V.keys()))
         print("robot.all_states count:", len(all_states.keys()))
 
@@ -382,7 +382,7 @@ class SmartRobot(Robot):
         # repeat until convergence
         while biggest_change > SMALL_ENOUGH:
             biggest_change = 0
-            for s in all_states.values():
+            for s in all_states.values().__reversed__():
                 old_v = V[(str(s.grid.cells), s.pos)]
                 _, new_v = best_action_value(V, s, self.gamma)
                 V[(str(s.grid.cells), s.pos)] = new_v
@@ -390,7 +390,7 @@ class SmartRobot(Robot):
                 if (np.abs(old_v - new_v) > biggest_change):
                     biggest_change = np.abs(old_v - new_v)
                     biggest_change_state = (str(s.grid.cells), s.pos)
-                    #biggest_change = max(biggest_change, np.abs(old_v - new_v))
+                #biggest_change = max(biggest_change, np.abs(old_v - new_v))
             iteration_counter+=1
             print("iteration:", iteration_counter, "biggest_change:", biggest_change, "state:",biggest_change_state)
             print(V)
