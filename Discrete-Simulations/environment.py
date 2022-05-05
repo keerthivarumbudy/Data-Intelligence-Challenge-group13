@@ -4,9 +4,10 @@ import random
 import numpy as np
 
 SMALL_ENOUGH = 1e-3
-#ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
+# ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
 orients = {'n': -3, 'e': -4, 's': -5, 'w': -6}
 dirs = {'n': (0, -1), 'e': (1, 0), 's': (0, 1), 'w': (-1, 0)}
+
 
 class Robot:
     def __init__(self, grid, pos, orientation, p_move=0, battery_drain_p=0, battery_drain_lam=0, vision=1):
@@ -158,7 +159,7 @@ class State:
         self.orientation = orientation
         self.pos = pos
         self.grid = grid
-        #self.grid.cells[pos] = orients[self.orientation]
+        # self.grid.cells[pos] = orients[self.orientation]
         self.p_move = p_move
         self.alive = True
         self.battery_drain_p = battery_drain_p
@@ -189,9 +190,7 @@ class State:
             self.orientation = list(orients.keys())[(current + 1) % 4]
         elif curr_dir == 'l':
             self.orientation = list(orients.keys())[current - 1]
-        #self.grid.cells[self.pos] = orients[self.orientation]
-
-
+        # self.grid.cells[self.pos] = orients[self.orientation]
 
     def get_possible_moves(self):
         data = {}
@@ -209,33 +208,43 @@ class State:
 
     def get_reward(self):
         reward_dict = {
-            -2: -2,
-            -1: -2,
-            0: -1,
-            1: 1,
-            2: 10,
-            3: -10
+            -2: -2, # obstacle
+            -1: -2, # wall
+            0: -1,  # clean
+            1: 1,   # dirty
+            2: 10,  # goal
+            3: -20  # death
         }
         state_reward = reward_dict[self.grid.cells[self.pos]]
 
+        clean = (self.grid.cells == 0).sum()
+        dirty = (self.grid.cells >= 1).sum()
+        goal = (self.grid.cells == 2).sum()
+
+        if (self.grid.cells[self.pos] == 0): # current position is clean
+            if (dirty == 0): # no dirty cells
+                # this is a terminal state. give high reward
+                state_reward = 20
+
+
         # modified from environment.py
         # TODO: correct?
-        #expected_drain = self.battery_drain_p * np.random.exponential(self.battery_drain_lam)
+        # expected_drain = self.battery_drain_p * np.random.exponential(self.battery_drain_lam)
 
         # reward is reward of moving to new state + expected battery drain (negative constant)
-        reward = state_reward #- expected_drain
+        reward = state_reward  # - expected_drain
 
         return reward
 
-    def get_neighbouring_states(self): # Checks neighboring state is not a wall/obstacle
-        if not self.alive: #at death state
+    def get_neighbouring_states(self):  # Checks neighboring state is not a wall/obstacle
+        if not self.alive:  # at death state
             return []
         moves = list(dirs.values())
         states = []
         for move in moves:
             new_pos = tuple(np.array(self.pos) + np.array(move))
             if new_pos[0] < self.grid.cells.shape[0] and new_pos[1] < self.grid.cells.shape[1] and \
-                    new_pos[0] >= 0 and new_pos[1] >= 0 and self.grid.cells[new_pos] >=0:
+                    new_pos[0] >= 0 and new_pos[1] >= 0 and self.grid.cells[new_pos] >= 0:
                 new_state = copy.deepcopy(self)
                 # Find out how we should orient ourselves:
                 new_orient = list(dirs.keys())[list(dirs.values()).index(move)]
@@ -252,14 +261,14 @@ class State:
                         new_state.alive = False
                     else:
                         new_state.grid.cells[new_state.pos] = 0
-                    #new_state.grid.cells[new_pos] = new_state.orients[new_state.orientation]
+                    # new_state.grid.cells[new_pos] = new_state.orients[new_state.orientation]
                     new_state.pos = new_pos
 
                     states.append(new_state)
         return states
 
     def get_action_reward(self, action):
-        state_primes = self.get_neighbouring_states() # Excludes obstacles and walls
+        state_primes = self.get_neighbouring_states()  # Excludes obstacles and walls
         transitions = []
         new_pos = tuple(np.array(self.pos) + dirs[action])
 
@@ -270,13 +279,12 @@ class State:
             elif state_prime.p_move == 0:
                 prob = 0
             else:
-                prob = state_prime.p_move/(len(state_primes)-1)
+                prob = state_prime.p_move / (len(state_primes) - 1)
             transitions.append((prob, state_prime.get_reward(), state_prime))
         return transitions
 
 
 def is_terminal(state):
-
     g = state.grid.cells
     # TODO: consider unreachable situations
     return not np.isin(g, [1, 2]).any()
@@ -317,15 +325,14 @@ def evaluate_state(state, V, gamma, all_states):
     :return: Value matrix V
     """
 
-
-    if not state.alive:
-        V[(str(state.grid.cells), state.pos)] = -1000 #high negative value for death state
+    if not state.alive: # reached a death tile
+        V[(str(state.grid.cells), state.pos)] = -1000  # high negative value for death state
         all_states[(str(state.grid.cells), state.pos)] = state
         print("REACHED death state", (str(state.grid.cells), state.pos))
         return V
 
     if is_terminal(state):
-        V[(str(state.grid.cells), state.pos)] = 1000 #high value for final state
+        V[(str(state.grid.cells), state.pos)] = 1000  # high value for final state
         all_states[(str(state.grid.cells), state.pos)] = state
         print("REACHED terminal state", (str(state.grid.cells), state.pos))
         return V
@@ -336,7 +343,7 @@ def evaluate_state(state, V, gamma, all_states):
     all_states[(str(state.grid.cells), state.pos)] = state
 
     for new_state in state.get_neighbouring_states():
-        if not (str(new_state.grid.cells), new_state.pos) in V: #check this state is not seen before
+        if not (str(new_state.grid.cells), new_state.pos) in V:  # check this state is not seen before
             V = evaluate_state(new_state, V, gamma, all_states)
     return V
 
@@ -350,7 +357,7 @@ class SmartRobot(Robot):
         self.grid = grid
         self.orients = {'n': -3, 'e': -4, 's': -5, 'w': -6}
         self.dirs = {'n': (0, -1), 'e': (1, 0), 's': (0, 1), 'w': (-1, 0)}
-        #self.grid.cells[pos] = self.orients[self.orientation]
+        # self.grid.cells[pos] = self.orients[self.orientation]
         self.history = [[], []]
         self.p_move = p_move
         self.battery_drain_p = battery_drain_p
@@ -362,14 +369,13 @@ class SmartRobot(Robot):
         self.V = self.calculate_values()
         # self.policy = self.calculate_policy()
 
-
     def calculate_values(self):
         print("Start calculating V ")
         current_state = State(self.grid, self.pos, self.orientation, self.p_move, self.battery_drain_p,
                               self.battery_drain_lam)
         V = {}
         all_states = {}
-        #find all states and compute V matrix (one iteration over all states)
+        # find all states and compute V matrix (one iteration over all states)
         V = evaluate_state(current_state, V, self.gamma, all_states)
         sorted(V.keys(), reverse=True)
         print("robot.v count:", len(V.keys()))
@@ -390,13 +396,11 @@ class SmartRobot(Robot):
                 if (np.abs(old_v - new_v) > biggest_change):
                     biggest_change = np.abs(old_v - new_v)
                     biggest_change_state = (str(s.grid.cells), s.pos)
-                #biggest_change = max(biggest_change, np.abs(old_v - new_v))
-            iteration_counter+=1
-            print("iteration:", iteration_counter, "biggest_change:", biggest_change, "state:",biggest_change_state)
+                # biggest_change = max(biggest_change, np.abs(old_v - new_v))
+            iteration_counter += 1
+            print("iteration:", iteration_counter, "biggest_change:", biggest_change, "state:", biggest_change_state)
             print(V)
         return V
-
-
 
     # def calculate_policy(self):
     #     current_state = State(self.grid, self.pos, self.orientation, self.p_move, self.battery_drain_p,
@@ -410,4 +414,4 @@ class SmartRobot(Robot):
     #         policy[(s.grid.cells, s.pos)] = best_a
     #     return policy
 
-#{(grid, pos): best_a, }
+# {(grid, pos): best_a, }

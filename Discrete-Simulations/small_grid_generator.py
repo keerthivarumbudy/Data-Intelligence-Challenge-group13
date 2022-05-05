@@ -13,6 +13,7 @@ for k in range(1):
     # Create the corridor:
     corr_y0 = int(height / 2)
     corr_y1 = int(height / 2) + 2
+    grid.put_obstacle(x0=1, x1=1 , y0=1, y1=1)
     #
     # n_rooms = 5
     # # Get upper rooms:
@@ -29,6 +30,6 @@ for k in range(1):
     # for i in range(0, rooms - 1):
     #     grid.put_obstacle(x0=(i + 1) * int(width / rooms), x1=(i + 1) * int(width / rooms), y0=corr_y1, y1=height)
 
-    name = 'simple-random-house'
+    name = 'simple-house'
     pickle.dump(grid, open(f'{PATH}/grid_configs/{name}-{k}.grid', 'wb'))
     print(grid.cells)
