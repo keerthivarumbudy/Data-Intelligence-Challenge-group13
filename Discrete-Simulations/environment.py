@@ -384,7 +384,7 @@ class DumbRobot(Robot):
         print('immediate_rewards', immediate_rewards)
         print('immediate_values', immediate_values)
         print('immediate_aggs', immediate_aggs)
-        print('immediate_final_rewards', state_future_value)
+        print('state_future_value', state_future_value)
         
         return state_value, state_future_value
 
@@ -400,7 +400,7 @@ class DumbRobot(Robot):
         
         return state_value, state_future_value
         
-    def sweep_until_convergence(self, convergence_threshold=0.01):
+    def sweep_until_convergence(self):
         # while |v′(s)−v(s)| < convergence_threshold
         
         list_S = list(self.S)
@@ -409,14 +409,15 @@ class DumbRobot(Robot):
         old_values = self.values
         new_values = old_values
         # TODO: is s current state in for loop or is it initial state?
-        while abs(new_values[state_ind] - old_values[state_ind]) < convergence_threshold:
+        while abs(new_values[state_ind] - old_values[state_ind]) < SMALL_ENOUGH:
             old_values = new_values
             
             for s in self.S.keys():
+                print(s)
                 state_ind = list_S.index(s)
                 old_values[state_ind], new_values[state_ind] = self.calculate_values(s)
-        
-        self.values = new_values
+                
+            self.values = new_values
 
     # Policy Improvement
 
@@ -497,4 +498,5 @@ if __name__ == '__main__':
     # _, robot.values[state_ind] = robot.calculate_values(get_state_id(robot.grid.cells))
     # print('new values:', robot.values)
     
+    # print(robot.calculate_values(get_state_id(robot.grid.cells)))
     print(robot.sweep_until_convergence())
