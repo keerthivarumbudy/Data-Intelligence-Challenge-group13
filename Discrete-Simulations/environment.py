@@ -331,6 +331,7 @@ class DumbRobot(Robot):
     def init_policy(self):
         # randomly assign policies
         orientations = [i for i in orients.keys()]
+        orientations = ['s', 's', 's', 's']
         return np.random.choice(orientations, len(self.S))
 
     def init_values(self):
@@ -355,16 +356,16 @@ class DumbRobot(Robot):
         try:
             if self.S[state_id]['is_terminal']:
                 if self.S[state_id]['terminal_reason'] == 'goal':
-                    return 1.0, 1.0
+                    return self.values[list(self.S).index(state_id)], 0.0
                 elif self.S[state_id]['terminal_reason'] == 'death':
-                    return -10.0, -10.0
+                    return self.values[list(self.S).index(state_id)], 0.0
         except:
             if immediate_state_ids[action] == state_id:
                 return self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(action)]], -1.0
             
         # get v(s')
         state_value = self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(action)]]
-
+        
         # get reward for each immediate state
         immediate_rewards = [get_reward_dict(self.S[state_id], orientation) for orientation in orients.keys()]
         
@@ -376,15 +377,15 @@ class DumbRobot(Robot):
         
         state_future_value = self.stochastic_final_reward(action, immediate_aggs)
         
-        print('state_id:', state_id)
-        print('immediate_state_ids', immediate_state_ids)
-        print('immediate_state_ids_index', immediate_state_ids_index)
-        print('current_action', action)
-        print('state_value', state_value)
-        print('immediate_rewards', immediate_rewards)
-        print('immediate_values', immediate_values)
-        print('immediate_aggs', immediate_aggs)
-        print('state_future_value', state_future_value)
+        # print('state_id:', state_id)
+        # print('immediate_state_ids', immediate_state_ids)
+        # print('immediate_state_ids_index', immediate_state_ids_index)
+        # print('current_action', action)
+        # print('state_value', state_value)
+        # print('immediate_rewards', immediate_rewards)
+        # print('immediate_values', immediate_values)
+        # print('immediate_aggs', immediate_aggs)
+        # print('state_future_value', state_future_value)
         
         return state_value, state_future_value
 
@@ -407,17 +408,29 @@ class DumbRobot(Robot):
         state_ind = list_S.index(get_state_id(self.grid.cells))
         
         old_values = self.values
-        new_values = old_values
+        new_values = deepcopy(old_values)
+        iterations = 0
         # TODO: is s current state in for loop or is it initial state?
-        while abs(new_values[state_ind] - old_values[state_ind]) < SMALL_ENOUGH:
-            old_values = new_values
+        # while abs(new_values[state_ind] - old_values[state_ind]) < SMALL_ENOUGH:
+        while iterations < 10:
+            iterations += 1
+            print('NEW ITERATION')
+            print('CURR VALUES:', self.values)
             
+            old_values = deepcopy(self.values)
             for s in self.S.keys():
                 print(s)
-                state_ind = list_S.index(s)
-                old_values[state_ind], new_values[state_ind] = self.calculate_values(s)
+                temp_state_ind = list_S.index(s)
+                print('old_values:', old_values)
+                old_value, new_value = self.calculate_values(s)
+                print('new_value:', new_value)
+                print('old_value:', old_value)
+                old_values[temp_state_ind] = old_value
+                new_values[temp_state_ind] = new_value
+                print('old_values:', old_values)
+                print('new_values:', new_values)
                 
-            self.values = new_values
+            self.values = deepcopy(new_values)
 
     # Policy Improvement
 
