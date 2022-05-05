@@ -217,9 +217,7 @@ class State:
         }
         state_reward = reward_dict[self.grid.cells[self.pos]]
 
-        clean = (self.grid.cells == 0).sum()
         dirty = (self.grid.cells >= 1).sum()
-        goal = (self.grid.cells == 2).sum()
 
         if (self.grid.cells[self.pos] == 0): # current position is clean
             if (dirty == 0): # no dirty cells
