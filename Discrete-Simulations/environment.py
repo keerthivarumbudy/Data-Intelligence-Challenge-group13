@@ -327,11 +327,26 @@ class DumbRobot(Robot):
             print('reachable states:')
             for sub_key in self.S[key]['immediately_reachable_states'].keys():
                 print(sub_key, self.S[key]['immediately_reachable_states'][sub_key])
+                
+    def possible_orients_per_state(self):
+        # get all possible orientations that change to a new state for each state
+        all_immediate_state_orients = []
+        for state_id in list(self.S.keys()):
+            immediate_state_orients = list(self.S[state_id]['immediately_reachable_states'].keys())
+            immediate_state_orients = [immediate_state_orient for immediate_state_orient in immediate_state_orients 
+                                   if self.S[state_id]['immediately_reachable_states'][immediate_state_orient] != state_id]
+            all_immediate_state_orients.append(immediate_state_orients)
+            
+        print(all_immediate_state_orients)
+        return all_immediate_state_orients
     
     def init_policy(self):
         # randomly assign policies
-        orientations = [i for i in orients.keys()]
-        return np.random.choice(orientations, len(self.S))
+        # orientations = [i for i in orients.keys()]
+        # return np.random.choice(orientations, len(self.S))
+        orientations_per_state = self.possible_orients_per_state()
+        random_orientation_per_state = [random.choice(orientations_in_state) if not (len(orientations_in_state) == 0) else '' for orientations_in_state in orientations_per_state]
+        return random_orientation_per_state
 
     def init_values(self):
         # init all values as 0
