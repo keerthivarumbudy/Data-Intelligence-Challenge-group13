@@ -331,7 +331,6 @@ class DumbRobot(Robot):
     def init_policy(self):
         # randomly assign policies
         orientations = [i for i in orients.keys()]
-        orientations = ['s', 's', 's', 's']
         return np.random.choice(orientations, len(self.S))
 
     def init_values(self):
@@ -361,7 +360,7 @@ class DumbRobot(Robot):
                     return self.values[list(self.S).index(state_id)], 0.0
         except:
             if immediate_state_ids[action] == state_id:
-                return self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(action)]], -1.0
+                return self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(action)]], 0.0
             
         # get v(s')
         state_value = self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(action)]]
@@ -370,7 +369,8 @@ class DumbRobot(Robot):
         immediate_rewards = [get_reward_dict(self.S[state_id], orientation) for orientation in orients.keys()]
         
         # get the value of each immediate state
-        immediate_values = [self.calculate_move(id, poss_action)[1] for id, poss_action in zip(list(immediate_state_ids.values()), list(immediate_state_ids.keys()))]
+        # immediate_values = [self.calculate_move(id, self.policy[list(self.S).index(id)], depth=depth+1)[1] for id in list(immediate_state_ids.values())]
+        immediate_values = [self.values[list(self.S).index(id)] for id in list(immediate_state_ids.values())]
         
         # aggregate rewards and future values of state
         immediate_aggs = [reward + self.gamma * value for reward, value in zip(immediate_rewards, immediate_values)]
@@ -485,7 +485,7 @@ if __name__ == '__main__':
     starting_location = (2,1)
     
     print(grid.cells)
-    robot = DumbRobot(grid, starting_location, orientation='n', battery_drain_p=0.5, battery_drain_lam=2)
+    robot = DumbRobot(grid, starting_location, orientation='n', battery_drain_p=0.5, battery_drain_lam=2, p_move=0.2)
     robot.print_state_dict()
     
     # get reward for each immediate state
