@@ -149,7 +149,7 @@ def generate_reachable_states(state, state_dict = OrderedDict()):
         if new_state_id not in state_dict:
             state_dict = generate_reachable_states(new_state, state_dict)
         
-        if (direction not in state_dict[state_id]['immediately_reachable_states']):
+        if (direction not in state_dict[state_id]['immediately_reachable_states']) & (state_id != new_state_id):
             state_dict[state_id]['immediately_reachable_states'][direction] = new_state_id
         #     state_dict[state_id]['immediately_reachable_states'][new_state_id] = {'direction': [direction]}
         # else:

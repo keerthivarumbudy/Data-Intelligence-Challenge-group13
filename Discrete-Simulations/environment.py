@@ -340,7 +340,11 @@ class DumbRobot(Robot):
     def stochastic_final_reward(self, action, immediate_aggs):
         # calculate P(s′,r|s,a)(r+γv(s′)) for all possible actions in state,
         # where intended action has prob (1-p_move) and other 3 moves have prob p_move/3
-        immediate_final_rewards = [(self.p_move/3) * immediate_aggs[i] if not list(orients.keys())[i] == action else (1-self.p_move) * immediate_aggs[i] for i in range(len(immediate_aggs))]
+        nr_of_neighbors = len(immediate_aggs)
+        if nr_of_neighbors > 1:
+            immediate_final_rewards = [(self.p_move/(nr_of_neighbors-1)) * immediate_aggs[i] if not list(orients.keys())[i] == action else (1-self.p_move) * immediate_aggs[i] for i in range(len(immediate_aggs))]
+        else:
+            immediate_final_rewards = [immediate_aggs[0]]
         return sum(immediate_final_rewards)
 
     # Policy Evaluation
@@ -359,14 +363,21 @@ class DumbRobot(Robot):
                 elif self.S[state_id]['terminal_reason'] == 'death':
                     return self.values[list(self.S).index(state_id)], 0.0
         except:
-            if immediate_state_ids[action] == state_id:
-                return self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(action)]], 0.0
+            # if immediate_state_ids[action] == state_id:
+            #     return self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(action)]], 0.0
+            print('not terminal')
             
         # get v(s')
-        state_value = self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(action)]]
+        try:
+            # if possible move, add v(s')
+            state_value = self.values[immediate_state_ids_index[list(immediate_state_ids.keys()).index(action)]]
+        except ValueError:
+            # otherwise, keep v(s)
+            state_ind = list(self.S).index(state_id)
+            state_value = self.values[state_ind]
         
         # get reward for each immediate state
-        immediate_rewards = [get_reward_dict(self.S[state_id], orientation) for orientation in orients.keys()]
+        immediate_rewards = [get_reward_dict(self.S[state_id], orientation) for orientation in orients.keys() if orientation in immediate_state_ids.keys()]
         
         # get the value of each immediate state
         # immediate_values = [self.calculate_move(id, self.policy[list(self.S).index(id)], depth=depth+1)[1] for id in list(immediate_state_ids.values())]
@@ -377,15 +388,15 @@ class DumbRobot(Robot):
         
         state_future_value = self.stochastic_final_reward(action, immediate_aggs)
         
-        # print('state_id:', state_id)
-        # print('immediate_state_ids', immediate_state_ids)
-        # print('immediate_state_ids_index', immediate_state_ids_index)
-        # print('current_action', action)
-        # print('state_value', state_value)
-        # print('immediate_rewards', immediate_rewards)
-        # print('immediate_values', immediate_values)
-        # print('immediate_aggs', immediate_aggs)
-        # print('state_future_value', state_future_value)
+        print('state_id:', state_id)
+        print('immediate_state_ids', immediate_state_ids)
+        print('immediate_state_ids_index', immediate_state_ids_index)
+        print('current_action', action)
+        print('state_value', state_value)
+        print('immediate_rewards', immediate_rewards)
+        print('immediate_values', immediate_values)
+        print('immediate_aggs', immediate_aggs)
+        print('state_future_value', state_future_value)
         
         return state_value, state_future_value
 
@@ -512,4 +523,4 @@ if __name__ == '__main__':
     # print('new values:', robot.values)
     
     # print(robot.calculate_values(get_state_id(robot.grid.cells)))
-    print(robot.sweep_until_convergence())
+    print(robot.calculate_values(get_state_id(robot.grid.cells)))
