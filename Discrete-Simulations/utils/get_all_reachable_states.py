@@ -109,8 +109,27 @@ def get_state_from_action(grid, action):
                 break
     return new_grid
     
+
+def get_clean_tiles(state):
+    """
+    Given a 2D grid (list of lists), returns the number of clean tiles.
     
-    
+    Parameters
+    ----------
+    state : [[int]]
+        A 2D grid (list of lists) of integers.
+        
+    Returns
+    -------
+    clean_tiles: int 
+        The number of clean tiles in the grid.
+    """
+    clean_tiles = 0
+    for row in state:
+        for cell in row:
+            if cell == materials['cell_clean']:
+                clean_tiles += 1
+    return clean_tiles
     
 def generate_reachable_states(state, state_dict = OrderedDict()):
     """
@@ -129,7 +148,7 @@ def generate_reachable_states(state, state_dict = OrderedDict()):
     """
     
     state_id = get_state_id(state)
-    state_dict[state_id] = {'grid': state, 'immediately_reachable_states': {} }
+    state_dict[state_id] = {'grid': state, 'immediately_reachable_states': {}, 'clean_tiles': get_clean_tiles(state)} 
     
     # Check if state is all clean
     if (all_clean(state)):

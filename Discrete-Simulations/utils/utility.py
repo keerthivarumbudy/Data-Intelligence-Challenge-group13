@@ -27,6 +27,31 @@ def get_reward(state, action):
     reward = state_reward - expected_drain
 
     return reward
+    
+def updated_get_reward(old_state, new_state):
+    """
+    Get the reward of the new state given an old state. 
+    
+    Parameters
+    ----------
+    old_state : dict
+        the old state
+    new_state : dict
+        the new state
+        
+    Returns
+    -------
+    reward : int
+        the reward of the new state 
+    """
+    # get the reward of the new state
+    # expected_drain = state.battery_drain_p * np.random.exponential(state.battery_drain_lam)
+    
+    if ('terminal_reason' in new_state and new_state['terminal_reason'] == 'death'):
+        return -10
+    
+    return old_state['clean_tiles'] - new_state['clean_tiles']
+                    
 
 def get_reward_dict(state_dict, action):
     # Get the possible values (dirty/clean) of the tiles we can end up at after a move:
