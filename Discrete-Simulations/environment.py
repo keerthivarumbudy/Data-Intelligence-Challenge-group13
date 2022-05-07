@@ -334,10 +334,9 @@ class DumbRobot(Robot):
         for state_id in list(self.S.keys()):
             immediate_state_orients = list(self.S[state_id]['immediately_reachable_states'].keys())
             immediate_state_orients = [immediate_state_orient for immediate_state_orient in immediate_state_orients 
-                                   if self.S[state_id]['immediately_reachable_states'][immediate_state_orient] != state_id]
+                                        if self.S[state_id]['immediately_reachable_states'][immediate_state_orient] != state_id]
             all_immediate_state_orients.append(immediate_state_orients)
             
-        print(all_immediate_state_orients)
         return all_immediate_state_orients
     
     def init_policy(self):
@@ -360,6 +359,7 @@ class DumbRobot(Robot):
             immediate_final_rewards = [(self.p_move/(nr_of_neighbors-1)) * immediate_aggs[i] if not list(orients.keys())[i] == action else (1-self.p_move) * immediate_aggs[i] for i in range(len(immediate_aggs))]
         else:
             immediate_final_rewards = [immediate_aggs[0]]
+        print('IMMEDIATE FINAL REWARDS', immediate_final_rewards)
         return sum(immediate_final_rewards)
 
     # Policy Evaluation
@@ -395,7 +395,7 @@ class DumbRobot(Robot):
         immediate_rewards = [get_reward_dict(self.S[state_id], orientation) for orientation in orients.keys() if orientation in immediate_state_ids.keys()]
         
         # get the value of each immediate state
-        # immediate_values = [self.calculate_move(id, self.policy[list(self.S).index(id)], depth=depth+1)[1] for id in list(immediate_state_ids.values())]
+        # immediate_values = [self.calculate_move(id, self.policy[list(self.S).index(id)])[1] for id in list(immediate_state_ids.values()) if self.policy[list(self.S).index(id)] != '']
         immediate_values = [self.values[list(self.S).index(id)] for id in list(immediate_state_ids.values())]
         
         # aggregate rewards and future values of state
@@ -403,7 +403,7 @@ class DumbRobot(Robot):
         
         state_future_value = self.stochastic_final_reward(action, immediate_aggs)
         
-        print('state_id:', state_id)
+        print('\nstate_id:', state_id)
         print('immediate_state_ids', immediate_state_ids)
         print('immediate_state_ids_index', immediate_state_ids_index)
         print('current_action', action)
@@ -411,7 +411,7 @@ class DumbRobot(Robot):
         print('immediate_rewards', immediate_rewards)
         print('immediate_values', immediate_values)
         print('immediate_aggs', immediate_aggs)
-        print('state_future_value', state_future_value)
+        print('state_future_value', state_future_value, '\n')
         
         return state_value, state_future_value
 
@@ -433,12 +433,12 @@ class DumbRobot(Robot):
         list_S = list(self.S)
         state_ind = list_S.index(get_state_id(self.grid.cells))
         
-        old_values = self.values
+        old_values = deepcopy(self.values)
         new_values = deepcopy(old_values)
         iterations = 0
-        # TODO: is s current state in for loop or is it initial state?
         # while abs(new_values[state_ind] - old_values[state_ind]) < SMALL_ENOUGH:
         while iterations < 10:
+            # while biggest change in all states is bigger than SMALL_ENOUGH threshold
             iterations += 1
             print('NEW ITERATION')
             print('CURR VALUES:', self.values)
@@ -538,4 +538,5 @@ if __name__ == '__main__':
     # print('new values:', robot.values)
     
     # print(robot.calculate_values(get_state_id(robot.grid.cells)))
-    print(robot.calculate_values(get_state_id(robot.grid.cells)))
+    print(robot.sweep_until_convergence())
+    print(robot.update_policy())

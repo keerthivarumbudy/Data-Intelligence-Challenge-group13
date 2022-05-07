@@ -50,7 +50,7 @@ def updated_get_reward(old_state, new_state):
     if ('terminal_reason' in new_state and new_state['terminal_reason'] == 'death'):
         return -10
     
-    return old_state['clean_tiles'] - new_state['clean_tiles']
+    return new_state['clean_tiles'] - old_state['clean_tiles']
                     
 
 def get_reward_dict(state_dict, action):
