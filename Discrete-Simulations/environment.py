@@ -282,7 +282,10 @@ class State:
             elif state_prime.p_move == 0:
                 prob = 0
             else:
-                prob = state_prime.p_move / (len(state_primes) - 1)
+                if (len(state_primes) == 1):
+                    prob = 0 #invalid position
+                else:
+                    prob = state_prime.p_move / (len(state_primes) - 1)
             transitions.append((prob, state_prime.get_reward(), state_prime))
         return transitions
 
@@ -466,14 +469,8 @@ class SmartRobot(Robot):
             # If we don't have the wanted orientation, rotate clockwise until we do:
             # print('Rotating right once.')
             self.rotate('r')
-        attempt_complete = False
-        while not attempt_complete:
-            try:
-                self.move()
-                attempt_complete = True
-            except ValueError:
-                print("ERROR: Value error occured when moving. current position:", current_state.pos, "target action:", new_orient, "grid:", current_state.grid.cells)
-                attempt_complete = False
+
+        self.move()
 
 
 
