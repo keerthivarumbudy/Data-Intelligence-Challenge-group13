@@ -105,6 +105,8 @@ def run_grid(robot, grid_file, randomness_move, orientation, gamma):
     result = str(grid_file) + ";" + str(average_efficiencies) + ";" + str(std_efficiences) +  ";" + str(average_n_moves) + ";" + str(std_n_moves) + ";" + str(average_cleaned) + ";" + str(std_cleaned) + ";" + str(randomness_move) + ";" + str(gamma) + "; \n"
     # add all parameters and results to a dataframe
     runs_df = runs_df.append(pd.Series([grid_file, average_efficiencies, std_efficiences, average_n_moves, std_n_moves, average_cleaned, std_cleaned, randomness_move, gamma], index=runs_df.columns), ignore_index=True)
+    print(runs_df)
+
     # save_dir = os.path.join("text")
     with open(f"text/{grid_file}_results.txt", "a") as f:
         f.write(result)
@@ -119,7 +121,7 @@ def run_experiment(robot):
         header_line = "grid;average_efficiencies;std_efficiencies;average_n_moves;std_n_moves;average_cleaned;std_cleaned;randomness_move;gamma\n"
         f.write(header_line)
 
-    for grid_file in os.listdir('grid_configs'): # grid_file == 'example-2x2-house-0.grid' or grid_file == 'death.grid' or grid_file == 'example-5x5-house-0.grid' or
+    for grid_file in ['example-5x5-house-0.grid']:#os.listdir('grid_configs'): # grid_file == 'example-2x2-house-0.grid' or grid_file == 'death.grid' or grid_file == 'example-5x5-house-0.grid' or
         if grid_file == 'example-random-level.grid' or grid_file == 'empty.grid' \
                 or grid_file == "example-random-house-0.grid" or grid_file == "example-random-house-1.grid" or grid_file == "example-random-house-2.grid" or grid_file == "example-random-house-3.grid" or grid_file == "example-random-house-4.grid":
             continue
