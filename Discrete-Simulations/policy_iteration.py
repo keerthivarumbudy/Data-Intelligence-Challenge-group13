@@ -34,7 +34,7 @@ class DumbRobot(Robot):
         self.values = self.init_values()
         
     def init_state(self):
-        from robot_configs.policy_iteration import State
+        from robot_configs.policy_iteration_robot import State
         
         # a state is the grid combined with a robot position
         initial_state = State(self.grid, self.pos, self.orientation)
@@ -213,6 +213,89 @@ class DumbRobot(Robot):
             # if π′ == π, then policy has converged
             if np.array_equal(old_policy, new_policy):
                 return self.policy, self.values
+            
+    ### ROBOT EPOCH ###
+    
+    def do_move(self):
+        # original robot self.move() with -3 at grid.cells[pos] instead of orientation
+        
+        # Can't move if we're dead now, can we?
+        if not self.alive:
+            return False
+        random_move = np.random.binomial(1, self.p_move)
+        do_battery_drain = np.random.binomial(1, self.battery_drain_p)
+        if do_battery_drain == 1 and self.battery_lvl > 0:
+            self.battery_lvl -= np.random.exponential(self.battery_drain_lam)
+        # Handle empty battery:
+        if self.battery_lvl <= 0:
+            self.alive = False
+            return False
+        print(random_move, do_battery_drain, self.battery_lvl)
+        if random_move == 1:
+            moves = self.possible_tiles_after_move()
+            random_move = random.choice([move for move in moves if moves[move] >= 0])
+            new_pos = tuple(np.array(self.pos) + random_move)
+            # Only move to non-blocked tiles:
+            if self.grid.cells[new_pos] >= 0:
+                new_orient = list(self.dirs.keys())[list(self.dirs.values()).index(random_move)]
+                tile_after_move = self.grid.cells[new_pos]
+                self.grid.cells[self.pos] = 0
+                self.grid.cells[new_pos] = -3
+                self.pos = new_pos
+                self.history[0].append(self.pos[0])
+                self.history[1].append(self.pos[1])
+                if tile_after_move == 3:
+                    self.alive = False
+                    return False
+                return True
+            else:
+                return False
+        else:
+            state_ind = list(self.S).index(self.get_state_id())
+            # new_pos = (int(self.pos[0]) + int(self.policy[state_ind][0]), int(self.pos[1]) + int(self.policy[state_ind][1]))
+            # new_pos = tuple(map(sum, zip(self.pos, self.policy[state_ind])))
+            print(self.policy[state_ind], self.pos)
+            print(self.get_state_id())
+            if not self.policy[state_ind] == '':
+                new_pos = tuple(np.array(self.pos) + self.dirs[self.policy[state_ind]])
+            else:
+                new_pos = self.pos
+            print(self.policy[state_ind], new_pos)
+            print('value of next pos:', self.grid.cells[new_pos[1]][new_pos[0]], 'bool:', self.grid.cells[new_pos[1]][new_pos[0]] >= 0)
+            # Only move to non-blocked tiles:
+            if self.grid.cells[new_pos[1]][new_pos[0]] >= 0 and not self.policy[state_ind] == '':
+                tile_after_move = self.grid.cells[new_pos[1]][new_pos[0]]
+                self.grid.cells[self.pos[1]][self.pos[0]] = 0
+                self.grid.cells[new_pos[1]][new_pos[0]] = -3
+                self.pos = new_pos
+                print(self.pos)
+                self.history[0].append(self.pos[0])
+                self.history[1].append(self.pos[1])
+                # Death:
+                if tile_after_move == 3:
+                    self.alive = False
+                    return False
+                return True
+            else:
+                return False
+    
+    def find_and_do_move(self):
+        # set self.policy to self.orientation at self.pos
+        init_state_ind = list(self.S).index(self.get_state_id())
+        # self.policy[init_state_ind] = self.orientation
+        
+        # update to optimal values and policies
+        self.update_policy()
+
+        attempt_complete = False
+        while not attempt_complete:
+            self.do_move()
+            try:
+                self.do_move()
+                attempt_complete = True
+            except ValueError:
+                print("ERROR: Value error occured when moving. current position:", self.pos, "target action:", self.policy[init_state_ind], "grid:", self.grid.cells)
+                attempt_complete = False
     
 if __name__ == '__main__':
     import pickle
