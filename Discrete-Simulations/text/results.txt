@@ -1,0 +1,1 @@
+grid;average_efficiencies;std_efficiencies;average_n_moves;std_n_moves;average_cleaned;std_cleaned;randomness_move;gamma
