@@ -16,31 +16,31 @@ with open(f'grid_configs/{grid_file}', 'rb') as f:
     grid = pickle.load(f)
 
 # Spawn the robot at (1,1) facing north with battery drainage enabled:
-print("The grid is:", grid.cells)
+# print("The grid is:", grid.cells)
 robot = DumbRobot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, gamma=0.9)
-print("ROBOT.V=", robot.values)
-print("ROBOT.Policy=", robot.policy)
+# print("ROBOT.V=", robot.values)
+# print("ROBOT.Policy=", robot.policy)
 
 
 # def print_V_policy(robot):
 #     for s_key in list(robot.all_states.keys())[:20]:
 
 #         current_state = robot.all_states[s_key]
-#         print("GRID: \n", current_state.grid.cells)
-#         print("POS: ", current_state.pos)
-#         print("VALUE: ", robot.V[s_key])
-#         print("POLICY: ", robot.policy[s_key])
+#         # print("GRID: \n", current_state.grid.cells)
+#         # print("POS: ", current_state.pos)
+#         # print("VALUE: ", robot.V[s_key])
+#         # print("POLICY: ", robot.policy[s_key])
 
 #         nb_states = current_state.get_neighbouring_states()
-#         print(robot.policy[s_key])
+#         # print(robot.policy[s_key])
 #         for s in nb_states:
-#             print("NEIGHBOR")
-#             print(s.grid.cells)
-#             print(s.pos)
-#             print(s.orientation)
+#             # print("NEIGHBOR")
+#             # print(s.grid.cells)
+#             # print(s.pos)
+#             # print(s.orientation)
 #             grid_key, pos_key = get_state_key(s)
 #             s_val = robot.V[(grid_key, pos_key)]
-#             print(s_val)
+#             # print(s_val)
 
 
 #print_V_policy(robot)
@@ -68,9 +68,9 @@ for i in range(1):
         # Do a robot epoch (basically call the robot algorithm once):
         robot_epoch(robot)
         # for state in range(len(robot.values)):
-        #     print("ROBOT.V=", robot.values[state])
-        #     print("ROBOT.Policy=", robot.policy[state])
-        #     print("ROBOT.states=", list(robot.S.keys())[state])
+        #     # print("ROBOT.V=", robot.values[state])
+        #     # print("ROBOT.Policy=", robot.policy[state])
+        #     # print("ROBOT.states=", list(robot.S.keys())[state])
         # Stop this simulation instance if robot died :( :
         if not robot.alive:
             deaths += 1
@@ -82,8 +82,8 @@ for i in range(1):
         death_tiles = (robot.grid.cells == 3).sum()
         # Calculate the cleaned percentage:
         clean_percent = (clean / (dirty + clean - death_tiles)) * 100
-        print(robot.grid.cells)
-        print('CLEANED: ', clean_percent)
+        # print(robot.grid.cells)
+        # print('CLEANED: ', clean_percent)
         # See if the room can be considered clean, if so, stop the simulaiton instance:
         if clean_percent >= stopping_criteria and goal == 0:
             break
@@ -92,10 +92,10 @@ for i in range(1):
         u_moves = set(moves)
         n_revisted_tiles = len(moves) - len(u_moves)
         efficiency = (100 * n_total_tiles) / (n_total_tiles + n_revisted_tiles)
-        print("Move info:")
-        print("Move:", moves)
-        print("clean percent:", clean_percent)
-        print("efficiency:", efficiency)
+        # print("Move info:")
+        # print("Move:", moves)
+        # print("clean percent:", clean_percent)
+        # print("efficiency:", efficiency)
         #time.sleep(5)
     # Keep track of the last statistics for each simulation instance:
     efficiencies.append(float(efficiency))

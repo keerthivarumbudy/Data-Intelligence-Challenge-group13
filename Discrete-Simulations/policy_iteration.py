@@ -230,7 +230,7 @@ class DumbRobot(Robot):
         if self.battery_lvl <= 0:
             self.alive = False
             return False
-        print(random_move, do_battery_drain, self.battery_lvl)
+        # print(random_move, do_battery_drain, self.battery_lvl)
         if random_move == 1:
             moves = self.possible_tiles_after_move()
             random_move = random.choice([move for move in moves if moves[move] >= 0])
@@ -254,21 +254,21 @@ class DumbRobot(Robot):
             state_ind = list(self.S).index(self.get_state_id())
             # new_pos = (int(self.pos[0]) + int(self.policy[state_ind][0]), int(self.pos[1]) + int(self.policy[state_ind][1]))
             # new_pos = tuple(map(sum, zip(self.pos, self.policy[state_ind])))
-            print(self.policy[state_ind], self.pos)
-            print(self.get_state_id())
+            # print(self.policy[state_ind], self.pos)
+            # print(self.get_state_id())
             if not self.policy[state_ind] == '':
                 new_pos = tuple(np.array(self.pos) + self.dirs[self.policy[state_ind]])
             else:
                 new_pos = self.pos
-            print(self.policy[state_ind], new_pos)
-            print('value of next pos:', self.grid.cells[new_pos[1]][new_pos[0]], 'bool:', self.grid.cells[new_pos[1]][new_pos[0]] >= 0)
+            # print(self.policy[state_ind], new_pos)
+            # print('value of next pos:', self.grid.cells[new_pos[1]][new_pos[0]], 'bool:', self.grid.cells[new_pos[1]][new_pos[0]] >= 0)
             # Only move to non-blocked tiles:
             if self.grid.cells[new_pos[1]][new_pos[0]] >= 0 and not self.policy[state_ind] == '':
                 tile_after_move = self.grid.cells[new_pos[1]][new_pos[0]]
                 self.grid.cells[self.pos[1]][self.pos[0]] = 0
                 self.grid.cells[new_pos[1]][new_pos[0]] = -3
                 self.pos = new_pos
-                print(self.pos)
+                # print(self.pos)
                 self.history[0].append(self.pos[0])
                 self.history[1].append(self.pos[1])
                 # Death:
@@ -294,7 +294,7 @@ class DumbRobot(Robot):
                 self.do_move()
                 attempt_complete = True
             except ValueError:
-                print("ERROR: Value error occured when moving. current position:", self.pos, "target action:", self.policy[init_state_ind], "grid:", self.grid.cells)
+                # print("ERROR: Value error occured when moving. current position:", self.pos, "target action:", self.policy[init_state_ind], "grid:", self.grid.cells)
                 attempt_complete = False
     
 if __name__ == '__main__':
@@ -305,21 +305,21 @@ if __name__ == '__main__':
         
     starting_location = (1,1)
     
-    print(grid.cells)
+    # print(grid.cells)
     robot = DumbRobot(grid, starting_location, orientation='n', battery_drain_p=0.5, battery_drain_lam=2, p_move=0.2)
     robot.print_state_dict()
     
-    print('nr of reachable states:', len(robot.S))
-    print('old policy:', robot.policy)
-    print('old values:', robot.values)
+    # print('nr of reachable states:', len(robot.S))
+    # print('old policy:', robot.policy)
+    # print('old values:', robot.values)
     
     # state_ind = list(robot.S).index(get_state_id(robot.grid.cells))
     # _, robot.values[state_ind] = robot.calculate_values(get_state_id(robot.grid.cells))
-    # print('new values:', robot.values)
-    # print(robot.update_policy())
-    # print('new policy:', robot.policy)
+    # # print('new values:', robot.values)
+    # # print(robot.update_policy())
+    # # print('new policy:', robot.policy)
     # _, robot.values[state_ind] = robot.calculate_values(get_state_id(robot.grid.cells))
-    # print('new values:', robot.values)
+    # # print('new values:', robot.values)
     
-    # print(robot.calculate_values(get_state_id(robot.grid.cells)))
-    print(robot.update_policy())
+    # # print(robot.calculate_values(get_state_id(robot.grid.cells)))
+    # print(robot.update_policy())
