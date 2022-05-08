@@ -14,14 +14,14 @@ from environment import Robot, SmartRobot
 from robot_configs import *
 from robot_configs.value_iteration_robot import robot_epoch
 
-def run_grid(robot, grid_file, randomness_move, drain_prob, drain, vision, orientation):
+def run_grid(robot, grid_file, randomness_move, orientation, gamma):
     print("start run_grid")
-    print(robot, grid_file, randomness_move, drain_prob, drain, vision, orientation)
+    print(robot, grid_file, randomness_move, orientation, gamma)
     # robot_epoch = getattr(__import__('robot_configs', fromlist=[robot]), robot_epoch)
 
     # Cleaned tile percentage at which the room is considered 'clean':
     stopping_criteria = 100
-        
+
     # Keep track of some statistics:
     efficiencies = []
     n_moves = []
@@ -29,7 +29,7 @@ def run_grid(robot, grid_file, randomness_move, drain_prob, drain, vision, orien
     cleaned = []
     with open(f'grid_configs/{grid_file}', 'rb') as f:
         grid = pickle.load(f)
-    master_robot = SmartRobot(grid, (1, 1), orientation=orientation, battery_drain_p=drain_prob, battery_drain_lam=drain, vision=vision, p_move=randomness_move)
+    master_robot = SmartRobot(grid, (1, 1), orientation=orientation, p_move=randomness_move, gamma=gamma)
 
     # Run 100 times:
     for i in range(100):
@@ -79,84 +79,65 @@ def run_grid(robot, grid_file, randomness_move, drain_prob, drain, vision, orien
     # # Print the final statistics:
     # fig1, (ax1, ax2) = plt.subplots(nrows=2, ncols=1,figsize=(8,8)) # two axes on figure
 
-    # # Make some plots:
-    # ax1.hist(cleaned)
-    # ax1.set_title('Percentage of tiles cleaned.')
-    # ax1.set_xlabel('% cleaned')
-    # ax1.set_ylabel('count')
+    std_efficiences = np.std(efficiencies)
+    std_n_moves = np.std(n_moves)
+    std_cleaned = np.std(cleaned)
 
-    # ax2.hist(efficiencies)
-    # ax2.set_title('Efficiency of robot.')
-    # ax2.set_xlabel('Efficiency %')
-    # ax2.set_ylabel('count')
-    
-    # plt.subplots_adjust(hspace=0.4,
-    #                     wspace=0.4)
-    # # plt savefig to unique dir in plots
-    # save_dir = os.path.join('plots', f'{grid_file}', f'{orientation}')
-    # print(save_dir)
-    # print(os.path.join(save_dir, f'{randomness_move}_{drain_prob}_{drain}_{vision}_plot.png'))
-    # if not os.path.exists(save_dir):
-    #     os.makedirs(save_dir)
-    # fig1.savefig(os.path.join(save_dir, f'{randomness_move}_{drain_prob}_{drain}_{vision}_plot.png'))
+    result = str(grid_file) + ";" + str(average_efficiencies) + ";" + str(std_efficiences) +  ";" + str(average_n_moves) + ";" + str(std_n_moves) + ";" + str(average_cleaned) + ";" + str(std_cleaned) + ";" + str(randomness_move) + ";" + str(drain_prob) + ";" + str(drain) + ";" + str(vision) + "\n"
+    save_dir = os.path.join("text")
+    with open("text/results.txt", "a") as f:
+        f.write(result)
 
-    result = "average_efficiency : " + str(average_efficiencies) +  ", average_n_moves : " + str(average_n_moves) + ", average_cleaned : " + str(average_cleaned)
-    save_dir = os.path.join('text', f'{grid_file}', f'{orientation}')
-    print(os.path.join(save_dir, f'{randomness_move}_{drain_prob}_{drain}_{vision}_text.txt'))
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-        file1 = open(os.path.join(save_dir, f'{randomness_move}_{drain_prob}_{drain}_{vision}_text.txt'), "w")
-        file1.write(result)
-        file1.close()
-
-    # .savefig(os.path.join(save_dir, f'{randomness_move}_{drain_prob}_{drain}_{vision}_text.txt'))
 
     print("end run_grid")
 
-
 def run_experiment(robot):
     random.random()
+    with open("text/results.txt", "w") as f:
+        header_line = "grid;average_efficiencies;std_efficiencies;average_n_moves;std_n_moves;average_cleaned;std_cleaned;randomness_move;drain_prob;drain;vision\n"
+        f.write(header_line)
 
-    for grid_file in os.listdir('grid_configs'):
-        if grid_file == 'example-2x2-house-0.grid' or grid_file == 'death.grid' or grid_file == 'example-random-level.grid' or grid_file == 'empty.grid' \
-            or grid_file == "example-random-house-0.grid" or grid_file == "example-random-house-1.grid" or grid_file == "example-random-house-2.grid" or grid_file == "example-random-house-3.grid" or grid_file == "example-random-house-4.grid":
+    for grid_file in os.listdir('grid_configs'): #grid_file == 'example-2x2-house-0.grid' or grid_file == 'death.grid' or
+        if grid_file == 'example-random-level.grid' or grid_file == 'empty.grid' \
+                or grid_file == "example-random-house-0.grid" or grid_file == "example-random-house-1.grid" or grid_file == "example-random-house-2.grid" or grid_file == "example-random-house-3.grid" or grid_file == "example-random-house-4.grid":
             continue
-        
+
         robot = [robot]
         grid_file = [grid_file]
-        
+
         # evenly distributed list of floats between 0 and 1
         # evenly_floats = np.random.uniform(0.0, 1.0, size=10)
-        evenly_floats = [0, 1]
-        randomness_move = evenly_floats
-        drain_prob = evenly_floats
+        evenly_floats = np.linspace(0,1,5)
+        randomness_move = [0, 0.25, 0.5,  0.75]
+        #drain_prob = evenly_floats
+        gamma = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
         # evenly distributed list of integers between 0 and 10
-        drain = [0, 10]
-        vision = [1, 5]
+        #drain = [0, 10]
+        #vision = [1]
 
-        orientation = ['n', 'e', 's', 'w']
-        print(robot, grid_file, randomness_move, drain_prob, drain, vision, orientation)
-
-        args = list(itertools.product(*[robot, grid_file, randomness_move, drain_prob, drain, vision, orientation]))
-
+        orientation = ['n']
+        #print(robot, grid_file, randomness_move, drain_prob, drain, vision, orientation, gamma)
+        print(robot, grid_file, randomness_move, orientation, gamma)
+        #args = list(itertools.product(*[robot, grid_file, randomness_move, drain_prob, drain, vision, orientation, gamma]))
+        args = list(itertools.product(*[robot, grid_file, randomness_move, orientation, gamma]))
         num_cpus = multiprocessing.cpu_count()
         with multiprocessing.Pool(num_cpus) as processing_pool:
             results = processing_pool.starmap(run_grid, args)
-        
+
 def main():
     cmdline_parser = argparse.ArgumentParser(description='Script for simulating a competitive sudoku game.')
     cmdline_parser.add_argument('--robot', help="the module name of the first player's SudokuAI class (default: greedy_random_robot)", default='value_teration_robot') #'greedy_random_robot')
     args = cmdline_parser.parse_args()
-    
+
     run_experiment(args.robot)
-    
-    
+
+
 
 if __name__ == '__main__':
     robot = 'greedy_random_robot'
     grid = 'example-random-house-0.grid'
     randomness_move = 0.04716257948841984
-    drain_prob = 0.6800854602934419 
+    drain_prob = 0.6800854602934419
     drain = 1
     vision = 0
     orientation = 'n'

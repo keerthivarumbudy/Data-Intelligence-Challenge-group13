@@ -417,7 +417,7 @@ class SmartRobot(Robot):
                 V[(grid_key, pos_key)] = new_v
                 biggest_change = max(biggest_change, np.abs(old_v - new_v))
             iteration_counter += 1
-            print("iteration:", iteration_counter, "biggest_change:", biggest_change)
+            print("iteration:", iteration_counter, "biggest_change:", biggest_change, "gamma:", self.gamma, "p_move:", self.p_move)
         self.all_states = all_states
         print("V matrix:", V)
         return V
