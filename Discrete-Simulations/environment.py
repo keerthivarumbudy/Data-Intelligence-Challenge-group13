@@ -279,7 +279,10 @@ class State:
             elif state_prime.p_move == 0:
                 prob = 0
             else:
-                prob = state_prime.p_move / (len(state_primes) - 1)
+                if (len(state_primes) == 1):
+                    prob = 0 #invalid position
+                else:
+                    prob = state_prime.p_move / (len(state_primes) - 1)
             transitions.append((prob, state_prime.get_reward(), state_prime))
         return transitions
 
@@ -418,6 +421,9 @@ class SmartRobot(Robot):
                 biggest_change = max(biggest_change, np.abs(old_v - new_v))
             iteration_counter += 1
             print("iteration:", iteration_counter, "biggest_change:", biggest_change, "gamma:", self.gamma, "p_move:", self.p_move)
+            if iteration_counter == 1000:
+                print("Algorithm does not converge for this configuration:", "GRID:", self.grid.cells, "Starting position:", self.pos,
+                      "GAMMA:", self.gamma, "P_MOVE: ",self.p_move)
         self.all_states = all_states
         print("V matrix:", V)
         return V
@@ -463,14 +469,8 @@ class SmartRobot(Robot):
             # If we don't have the wanted orientation, rotate clockwise until we do:
             # print('Rotating right once.')
             self.rotate('r')
-        attempt_complete = False
-        while not attempt_complete:
-            try:
-                self.move()
-                attempt_complete = True
-            except ValueError:
-                print("ERROR: Value error occured when moving. current position:", current_state.pos, "target action:", new_orient, "grid:", current_state.grid.cells)
-                attempt_complete = False
+
+        self.move()
 
 
 

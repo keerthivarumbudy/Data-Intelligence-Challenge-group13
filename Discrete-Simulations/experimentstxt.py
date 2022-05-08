@@ -31,8 +31,8 @@ def run_grid(robot, grid_file, randomness_move, orientation, gamma):
         grid = pickle.load(f)
     master_robot = SmartRobot(grid, (1, 1), orientation=orientation, p_move=randomness_move, gamma=gamma)
 
-    # Run 100 times:
-    for i in range(100):
+    # Run 20 times:
+    for i in range(20):
         # Open the grid file.
         # (You can create one yourself using the provided editor).
 
@@ -59,7 +59,7 @@ def run_grid(robot, grid_file, randomness_move, orientation, gamma):
             clean_percent = (clean / (dirty + clean - death_tiles)) * 100
             #clean_percent = (clean / (dirty + clean)) * 100
             # See if the room can be considered clean, if so, stop the simulaiton instance:
-            print("robot clean percent = ", clean_percent)
+
             if clean_percent >= stopping_criteria and goal == 0:
                 break
             # Calculate the efficiency score:
@@ -67,14 +67,18 @@ def run_grid(robot, grid_file, randomness_move, orientation, gamma):
             u_moves = set(moves)
             n_revisted_tiles = len(moves) - len(u_moves)
             efficiency = (100 * n_total_tiles) / (n_total_tiles + n_revisted_tiles)
+            print("robot clean percent = ", clean_percent, "efficiency = ", efficiency)
+            if efficiency < 1:
+                print("Efficiency too low. Terminating robot. Robot configs:", str(grid_file) + ";" + str(len(moves)) + ";" + str(randomness_move) + ";" + str(gamma) + ";")
+                break
         # Keep track of the last statistics for each simulation instance:
         efficiencies.append(float(efficiency))
         n_moves.append(len(robot.history[0]))
         cleaned.append(clean_percent)
 
-    average_efficiencies = sum(efficiencies)/100
-    average_n_moves = sum(n_moves)/100
-    average_cleaned = sum(cleaned)/100
+    average_efficiencies = sum(efficiencies)/20
+    average_n_moves = sum(n_moves)/20
+    average_cleaned = sum(cleaned)/20
     print("average_efficiency : " + str(average_efficiencies))
     # # Print the final statistics:
     # fig1, (ax1, ax2) = plt.subplots(nrows=2, ncols=1,figsize=(8,8)) # two axes on figure
@@ -83,7 +87,7 @@ def run_grid(robot, grid_file, randomness_move, orientation, gamma):
     std_n_moves = np.std(n_moves)
     std_cleaned = np.std(cleaned)
 
-    result = str(grid_file) + ";" + str(average_efficiencies) + ";" + str(std_efficiences) +  ";" + str(average_n_moves) + ";" + str(std_n_moves) + ";" + str(average_cleaned) + ";" + str(std_cleaned) + ";" + str(randomness_move) + ";" + str(drain_prob) + ";" + str(drain) + ";" + str(vision) + "\n"
+    result = str(grid_file) + ";" + str(average_efficiencies) + ";" + str(std_efficiences) +  ";" + str(average_n_moves) + ";" + str(std_n_moves) + ";" + str(average_cleaned) + ";" + str(std_cleaned) + ";" + str(randomness_move) + ";" + str(gamma) + "; \n"
     save_dir = os.path.join("text")
     with open("text/results.txt", "a") as f:
         f.write(result)
@@ -94,12 +98,15 @@ def run_grid(robot, grid_file, randomness_move, orientation, gamma):
 def run_experiment(robot):
     random.random()
     with open("text/results.txt", "w") as f:
-        header_line = "grid;average_efficiencies;std_efficiencies;average_n_moves;std_n_moves;average_cleaned;std_cleaned;randomness_move;drain_prob;drain;vision\n"
+        header_line = "grid;average_efficiencies;std_efficiencies;average_n_moves;std_n_moves;average_cleaned;std_cleaned;randomness_move;gamma\n"
         f.write(header_line)
 
-    for grid_file in os.listdir('grid_configs'): #grid_file == 'example-2x2-house-0.grid' or grid_file == 'death.grid' or
-        if grid_file == 'example-random-level.grid' or grid_file == 'empty.grid' \
-                or grid_file == "example-random-house-0.grid" or grid_file == "example-random-house-1.grid" or grid_file == "example-random-house-2.grid" or grid_file == "example-random-house-3.grid" or grid_file == "example-random-house-4.grid":
+    for grid_file in os.listdir('grid_configs'): #
+        if grid_file == 'example-6x6-house-1.grid' or grid_file == 'example-2x2-house-0.grid' \
+                or grid_file == 'death.grid' or grid_file == 'example-5x5-house-0.grid' or grid_file == 'empty.grid' or \
+                grid_file == 'example-random-house-0.grid':
+        # or grid_file == 'example-random-level.grid' or grid_file == 'empty.grid' \
+        #         or grid_file == "example-random-house-0.grid" or grid_file == "example-random-house-1.grid" or grid_file == "example-random-house-2.grid" or grid_file == "example-random-house-3.grid" or grid_file == "example-random-house-4.grid":
             continue
 
         robot = [robot]
