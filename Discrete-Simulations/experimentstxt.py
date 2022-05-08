@@ -106,8 +106,8 @@ def run_grid(robot, grid_file, randomness_move, orientation, gamma):
     # add all parameters and results to a dataframe
     runs_df = runs_df.append(pd.Series([grid_file, average_efficiencies, std_efficiences, average_n_moves, std_n_moves, average_cleaned, std_cleaned, randomness_move, gamma], index=runs_df.columns), ignore_index=True)
     # save_dir = os.path.join("text")
-    # with open("text/results.txt", "a") as f:
-    #     f.write(result)
+    with open(f"text/{grid_file}_results.txt", "a") as f:
+        f.write(result)
 
 
     print("end run_grid")
