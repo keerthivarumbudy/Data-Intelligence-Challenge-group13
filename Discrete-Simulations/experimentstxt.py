@@ -1,3 +1,4 @@
+import copy
 import os
 import argparse
 import multiprocessing
@@ -8,12 +9,13 @@ from re import A
 import matplotlib.pyplot as plt
 import numpy as np
 
-from environment import Robot
+from environment import Robot, SmartRobot
 
 from robot_configs import *
-from robot_configs.greedy_random_robot import robot_epoch
+from robot_configs.value_iteration_robot import robot_epoch
 
 def run_grid(robot, grid_file, randomness_move, drain_prob, drain, vision, orientation):
+    print("start run_grid")
     print(robot, grid_file, randomness_move, drain_prob, drain, vision, orientation)
     # robot_epoch = getattr(__import__('robot_configs', fromlist=[robot]), robot_epoch)
 
@@ -25,17 +27,19 @@ def run_grid(robot, grid_file, randomness_move, drain_prob, drain, vision, orien
     n_moves = []
     deaths = 0
     cleaned = []
+    with open(f'grid_configs/{grid_file}', 'rb') as f:
+        grid = pickle.load(f)
+    master_robot = SmartRobot(grid, (1, 1), orientation=orientation, battery_drain_p=drain_prob, battery_drain_lam=drain, vision=vision, p_move=randomness_move)
 
     # Run 100 times:
     for i in range(100):
         # Open the grid file.
         # (You can create one yourself using the provided editor).
-        with open(f'grid_configs/{grid_file}', 'rb') as f:
-            grid = pickle.load(f)
+
         # Calculate the total visitable tiles:
         n_total_tiles = (grid.cells >= 0).sum()
         # Spawn the robot at (1,1) facing north with battery drainage enabled:
-        robot = Robot(grid, (1, 1), orientation=orientation, battery_drain_p=drain_prob, battery_drain_lam=drain, vision=vision, p_move=randomness_move)
+        robot = copy.deepcopy(master_robot)
         # Keep track of the number of robot decision epochs:
         n_epochs = 0
         while True:
@@ -47,15 +51,18 @@ def run_grid(robot, grid_file, randomness_move, drain_prob, drain, vision, orien
                 deaths += 1
                 break
             # Calculate some statistics:
-            clean = (grid.cells == 0).sum()
-            dirty = (grid.cells >= 1).sum()
-            goal = (grid.cells == 2).sum()
+            clean = (robot.grid.cells == 0).sum()
+            dirty = (robot.grid.cells >= 1).sum()
+            goal = (robot.grid.cells == 2).sum()
+            death_tiles = (robot.grid.cells == 3).sum()
             # Calculate the cleaned percentage:
-            clean_percent = (clean / (dirty + clean)) * 100
+            clean_percent = (clean / (dirty + clean - death_tiles)) * 100
+            #clean_percent = (clean / (dirty + clean)) * 100
             # See if the room can be considered clean, if so, stop the simulaiton instance:
+            print("robot clean percent = ", clean_percent)
             if clean_percent >= stopping_criteria and goal == 0:
                 break
-            # Calculate the effiency score:
+            # Calculate the efficiency score:
             moves = [(x, y) for (x, y) in zip(robot.history[0], robot.history[1])]
             u_moves = set(moves)
             n_revisted_tiles = len(moves) - len(u_moves)
@@ -98,15 +105,21 @@ def run_grid(robot, grid_file, randomness_move, drain_prob, drain, vision, orien
     print(os.path.join(save_dir, f'{randomness_move}_{drain_prob}_{drain}_{vision}_text.txt'))
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
-        file1 = open(os.path.join(save_dir, f'{randomness_move}_{drain_prob}_{drain}_{vision}_text.txt'), "w").write(result)
+        file1 = open(os.path.join(save_dir, f'{randomness_move}_{drain_prob}_{drain}_{vision}_text.txt'), "w")
+        file1.write(result)
         file1.close()
 
     # .savefig(os.path.join(save_dir, f'{randomness_move}_{drain_prob}_{drain}_{vision}_text.txt'))
+
+    print("end run_grid")
+
+
 def run_experiment(robot):
     random.random()
 
     for grid_file in os.listdir('grid_configs'):
-        if grid_file == 'empty.grid' or grid_file == 'death.grid' or grid_file == "example-random-house-0.grid" or grid_file == "example-random-house-1.grid" or grid_file == "example-random-house-2.grid" or grid_file == "example-random-house-3.grid" or grid_file == "example-random-house-4.grid":
+        if grid_file == 'example-2x2-house-0.grid' or grid_file == 'death.grid' or grid_file == 'example-random-level.grid' or grid_file == 'empty.grid' \
+            or grid_file == "example-random-house-0.grid" or grid_file == "example-random-house-1.grid" or grid_file == "example-random-house-2.grid" or grid_file == "example-random-house-3.grid" or grid_file == "example-random-house-4.grid":
             continue
         
         robot = [robot]
@@ -132,7 +145,7 @@ def run_experiment(robot):
         
 def main():
     cmdline_parser = argparse.ArgumentParser(description='Script for simulating a competitive sudoku game.')
-    cmdline_parser.add_argument('--robot', help="the module name of the first player's SudokuAI class (default: greedy_random_robot)", default='greedy_random_robot')
+    cmdline_parser.add_argument('--robot', help="the module name of the first player's SudokuAI class (default: greedy_random_robot)", default='value_teration_robot') #'greedy_random_robot')
     args = cmdline_parser.parse_args()
     
     run_experiment(args.robot)

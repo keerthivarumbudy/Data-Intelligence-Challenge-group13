@@ -342,7 +342,7 @@ def evaluate_state(state, V, gamma, all_states):
         grid_key, pos_key = get_state_key(state)
         V[(grid_key, pos_key)] = -1000  # high negative value for death state
         all_states[(grid_key, pos_key)] = state
-        print("REACHED death state", (grid_key, pos_key))
+        #print("REACHED death state", (grid_key, pos_key))
         return V
 
     if is_terminal(state):
@@ -401,7 +401,7 @@ class SmartRobot(Robot):
         all_states = {}
         # find all states and compute V matrix (one iteration over all states)
         V = evaluate_state(current_state, V, self.gamma, all_states)
-        print("robot.v count:", len(V.keys()))
+        #print("robot.v count:", len(V.keys()))
         print("robot.all_states count:", len(all_states.keys()))
 
         biggest_change = np.inf
@@ -463,8 +463,15 @@ class SmartRobot(Robot):
             # If we don't have the wanted orientation, rotate clockwise until we do:
             # print('Rotating right once.')
             self.rotate('r')
+        attempt_complete = False
+        while not attempt_complete:
+            try:
+                self.move()
+                attempt_complete = True
+            except ValueError:
+                print("ERROR: Value error occured when moving. current position:", current_state.pos, "target action:", new_orient, "grid:", current_state.grid.cells)
+                attempt_complete = False
 
-        self.move()
 
 
 

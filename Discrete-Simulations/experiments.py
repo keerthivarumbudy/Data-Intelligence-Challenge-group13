@@ -21,6 +21,7 @@ from robot_configs.greedy_random_robot import robot_epoch
     reward = state_reward - expected_drain
 
     return reward
+
 def run_grid(robot, grid_file, randomness_move, drain_prob, drain, vision, orientation):
     print(robot, grid_file, randomness_move, drain_prob, drain, vision, orientation)
     # robot_epoch = getattr(__import__('robot_configs', fromlist=[robot]), robot_epoch)

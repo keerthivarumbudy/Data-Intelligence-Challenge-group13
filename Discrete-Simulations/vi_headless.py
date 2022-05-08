@@ -9,7 +9,7 @@ import pickle
 from environment import Robot, SmartRobot
 import matplotlib.pyplot as plt
 
-grid_file = 'death.grid'  # simple-random-house-0.grid'
+grid_file = 'example-2x2-house-0.grid' #'example-random-house-0.grid'  # simple-random-house-0.grid'
 # Cleaned tile percentage at which the room is considered 'clean':
 stopping_criteria = 100
 
@@ -18,7 +18,7 @@ with open(f'grid_configs/{grid_file}', 'rb') as f:
 
 # Spawn the robot at (1,1) facing north with battery drainage enabled:
 print("The grid is:", grid.cells)
-robot = SmartRobot(grid, (1, 2), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, gamma=0.9)
+robot = SmartRobot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, gamma=0.9)
 print("ROBOT.V=", robot.V)
 print("ROBOT.Policy=", robot.policy)
 
@@ -53,7 +53,7 @@ deaths = 0
 cleaned = []
 
 #Run 100 times:
-for i in range(100):
+for i in range(1):
     # Open the grid file.
     # (You can create one yourself using the provided editor).
     with open(f'grid_configs/{grid_file}', 'rb') as f:
