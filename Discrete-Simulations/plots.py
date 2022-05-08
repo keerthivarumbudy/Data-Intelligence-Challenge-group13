@@ -26,7 +26,7 @@ def autolabel(rects, xpos='center'):
                     textcoords="offset points",  # in both directions
                     ha=ha[xpos], va='bottom')
 
-data_frame = pd.read_csv("results_1.txt", delimiter = ";", index_col = False)
+data_frame = pd.read_csv("text/results_1.txt", delimiter = ";", index_col = False)
 print(data_frame)
 all_grids = data_frame['grid'].unique()
 print(all_grids)
@@ -46,13 +46,17 @@ for randommove in randomness_move:
         # print(grid)
         # print(df_plot1_grid['average_efficiencies'])
         # index = df_plot1_grid.index((df_plot1_grid["randomness_move"] == randommove) & (df_plot1_grid["drain_prob"] == drainprob) & (df_plot1_grid["drain"] == drainvalue) & (df_plot1_grid["vision"] == visionvalue))
-        efficiency_avg.append(df_plot1_grid['average_efficiencies'])
-        efficiency_std.append(df_plot1_grid['std_efficiencies'])
-        cleanliness_avg.append(df_plot1_grid['average_cleaned'])
-        cleanliness_std.append(df_plot1_grid['std_cleaned'])
+        efficiency_avg = efficiency_avg + list(df_plot1_grid['average_efficiencies'])
+        efficiency_std = efficiency_std + list(df_plot1_grid['std_efficiencies'])
+        cleanliness_avg = cleanliness_avg + list(df_plot1_grid['average_cleaned'])
+        cleanliness_std = cleanliness_std + list(df_plot1_grid['std_cleaned'])
 
     ind = np.arange(len(efficiency_avg))  # the x locations for the groups
     width = 0.35  # the width of the bars
+    
+    grid_names = [[grid_name]*int(round((len(ind)/len(grid_names)))) for grid_name in grid_names]
+    grid_names = [item for sublist in grid_names for item in sublist]
+    print(grid_names)
 
     fig, ax = plt.subplots()
     rects1 = ax.bar(ind - width/2,efficiency_avg , width, yerr=efficiency_std,
@@ -62,7 +66,7 @@ for randommove in randomness_move:
 
     # Add some text for labels, title and custom x-axis tick labels, etc.
     ax.set_ylabel('Percentage (%)')
-    ax.set_title('Percentage of efficiency and cleanliness of different grids with rand_move = ' + str(randommove) + ',' + ', vision = ' + str(vision))
+    ax.set_title('Percentage of efficiency and cleanliness of different grids with rand_move = ' + str(randommove))# + ',' + ', vision = ' + str(vision))
     ax.set_xticks(ind)
     ax.set_xticklabels(grid_names)
     ax.legend()
