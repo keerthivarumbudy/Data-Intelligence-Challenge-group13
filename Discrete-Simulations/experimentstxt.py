@@ -17,6 +17,8 @@ from robot_configs import *
 from robot_configs.policy_iteration_robot import robot_epoch
 
 runs_df = pd.DataFrame()
+# set runs_df columns to the parameters
+runs_df = pd.DataFrame(columns=["grid_file", "average_efficiencies", "std_efficiences", "average_n_moves", "std_n_moves", "average_cleaned", "std_cleaned", "randomness_move", "gamma"])
 
 def run_grid(robot, grid_file, randomness_move, orientation, gamma):
     global runs_df
@@ -35,7 +37,8 @@ def run_grid(robot, grid_file, randomness_move, orientation, gamma):
     cleaned = []
     with open(f'grid_configs/{grid_file}', 'rb') as f:
         grid = pickle.load(f)
-    master_robot = DumbRobot(grid, (1, 1), orientation=orientation, p_move=randomness_move, gamma=gamma)
+    # master_robot = DumbRobot(grid, (1, 1), orientation=orientation, p_move=randomness_move, gamma=gamma)
+    master_robot = DumbRobot(grid, (1, 1), orientation=orientation, gamma=gamma)
 
     nr_of_runs = 20
     # Run 100 times:
@@ -145,6 +148,7 @@ def run_experiment(robot):
             
         runs_df.to_csv(f"text/{grid_file}_results.csv")
         runs_df = pd.DataFrame()
+        runs_df = pd.DataFrame(columns=["grid_file", "average_efficiencies", "std_efficiences", "average_n_moves", "std_n_moves", "average_cleaned", "std_cleaned", "randomness_move", "gamma"])
             
     # save the dataframe to a csv file in the text folder
 
