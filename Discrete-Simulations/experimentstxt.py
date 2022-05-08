@@ -55,8 +55,8 @@ def run_grid(robot, grid_file, randomness_move, orientation, gamma):
                     
             try:
                 robot_epoch(robot)
-            except ValueError as e:
-                print('RUN FAILED, PROBABLY 2 POS ONE STATE')
+            except ValueError:
+                break
             # Stop this simulation instance if robot died :( :
             if not robot.alive:
                 deaths += 1

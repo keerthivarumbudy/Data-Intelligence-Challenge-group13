@@ -10,8 +10,8 @@ SMALL_ENOUGH = 1e-3
 
 class DumbRobot(Robot):
     def __init__(self, grid, pos, orientation, p_move=0, battery_drain_p=0, battery_drain_lam=0, vision=1, gamma=0.9):
-        if grid.cells[pos[0], pos[1]] != 1:
-            raise ValueError
+        # if grid.cells[pos[0], pos[1]] != 1:
+        #     raise ValueError
         self.orientation = orientation
         self.pos = pos
         self.grid = grid
@@ -240,7 +240,7 @@ class DumbRobot(Robot):
                 new_orient = list(self.dirs.keys())[list(self.dirs.values()).index(random_move)]
                 tile_after_move = self.grid.cells[new_pos]
                 self.grid.cells[self.pos] = 0
-                self.grid.cells[new_pos] = -3
+                self.grid.cells[new_pos] = -100
                 self.pos = new_pos
                 self.history[0].append(self.pos[0])
                 self.history[1].append(self.pos[1])
@@ -266,7 +266,7 @@ class DumbRobot(Robot):
             if self.grid.cells[new_pos[1]][new_pos[0]] >= 0 and not self.policy[state_ind] == '':
                 tile_after_move = self.grid.cells[new_pos[1]][new_pos[0]]
                 self.grid.cells[self.pos[1]][self.pos[0]] = 0
-                self.grid.cells[new_pos[1]][new_pos[0]] = -3
+                self.grid.cells[new_pos[1]][new_pos[0]] = -100
                 self.pos = new_pos
                 # print(self.pos)
                 self.history[0].append(self.pos[0])
@@ -281,21 +281,24 @@ class DumbRobot(Robot):
     
     def find_and_do_move(self):
         # set self.policy to self.orientation at self.pos
-        init_state_ind = list(self.S).index(self.get_state_id())
+        try:
+            init_state_ind = list(self.S).index(self.get_state_id())
+        except:
+            return
         # self.policy[init_state_ind] = self.orientation
         
         # update to optimal values and policies
         self.update_policy()
 
-        attempt_complete = False
-        while not attempt_complete:
-            self.do_move()
-            try:
-                self.do_move()
-                attempt_complete = True
-            except ValueError:
-                # print("ERROR: Value error occured when moving. current position:", self.pos, "target action:", self.policy[init_state_ind], "grid:", self.grid.cells)
-                attempt_complete = False
+        self.do_move()
+        # attempt_complete = False
+        # while not attempt_complete:
+            # try:
+            #     self.do_move()
+            #     attempt_complete = True
+            # except ValueError:
+            #     # print("ERROR: Value error occured when moving. current position:", self.pos, "target action:", self.policy[init_state_ind], "grid:", self.grid.cells)
+            #     attempt_complete = False
     
 if __name__ == '__main__':
     import pickle

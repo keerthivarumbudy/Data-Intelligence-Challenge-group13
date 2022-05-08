@@ -8,7 +8,7 @@ import pickle
 from policy_iteration import DumbRobot
 import matplotlib.pyplot as plt
 
-grid_file = 'example-6x6-house-1.grid' #'example-random-house-0.grid'  # simple-random-house-0.grid'
+grid_file = 'death.grid' #'example-random-house-0.grid'  # simple-random-house-0.grid'
 # Cleaned tile percentage at which the room is considered 'clean':
 stopping_criteria = 100
 
@@ -66,7 +66,10 @@ for i in range(1):
     while True:
         n_epochs += 1
         # Do a robot epoch (basically call the robot algorithm once):
-        robot_epoch(robot)
+        try:
+            robot_epoch(robot)
+        except ValueError:
+            break
         # for state in range(len(robot.values)):
         #     # print("ROBOT.V=", robot.values[state])
         #     # print("ROBOT.Policy=", robot.policy[state])

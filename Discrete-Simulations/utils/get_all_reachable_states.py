@@ -7,7 +7,7 @@ from utils.utility import *
 materials =  {'cell_clean': 0,
 'cell_wall': -1,
 'cell_obstacle': -2, 
-'cell_robot_n': -3, 
+'cell_robot_n': -100, 
 'cell_dirty': 1,
 'cell_goal': 2,
 'cell_death': 3,
