@@ -8,6 +8,15 @@ import pickle
 from policy_iteration import DumbRobot
 import matplotlib.pyplot as plt
 
+import pandas as pd
+
+runs_df = pd.DataFrame()
+
+randomness_move = [0, 0.25, 0.5,  0.75]
+randomness = 0.25
+gamma = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+g = 0.9
+
 grid_file = 'death.grid' #'example-random-house-0.grid'  # simple-random-house-0.grid'
 # Cleaned tile percentage at which the room is considered 'clean':
 stopping_criteria = 100
@@ -17,7 +26,7 @@ with open(f'grid_configs/{grid_file}', 'rb') as f:
 
 # Spawn the robot at (1,1) facing north with battery drainage enabled:
 # print("The grid is:", grid.cells)
-robot = DumbRobot(grid, (1, 1), orientation='n', battery_drain_p=0.5, battery_drain_lam=2, gamma=0.9)
+robot = DumbRobot(grid, (1, 1), orientation='n', p_move=randomness, battery_drain_p=0.0, battery_drain_lam=0, gamma=g)
 # print("ROBOT.V=", robot.values)
 # print("ROBOT.Policy=", robot.policy)
 
@@ -66,10 +75,8 @@ for i in range(1):
     while True:
         n_epochs += 1
         # Do a robot epoch (basically call the robot algorithm once):
-        try:
-            robot_epoch(robot)
-        except ValueError:
-            break
+        robot_epoch(robot)
+        
         # for state in range(len(robot.values)):
         #     # print("ROBOT.V=", robot.values[state])
         #     # print("ROBOT.Policy=", robot.policy[state])
@@ -104,16 +111,22 @@ for i in range(1):
     efficiencies.append(float(efficiency))
     n_moves.append(len(robot.history[0]))
     cleaned.append(clean_percent)
+    
+    print('run: ', i, 'clean_percent: ', clean_percent, 'efficiency: ', efficiency, 'n_moves: ', len(robot.history[0]))
+    runs_df = runs_df.append(pd.Series([grid_file, efficiency, 0.0, len(robot.history[0]), 0.0, clean_percent, 0.0, randomness, g], index=runs_df.columns), ignore_index=True)
 
-# Make some plots:
-plt.hist(cleaned)
-plt.title('Percentage of tiles cleaned.')
-plt.xlabel('% cleaned')
-plt.ylabel('count')
-plt.show()
+runs_df.to_csv(f'text/{randomness}_results.csv')
+runs_df = pd.DataFrame()
 
-plt.hist(efficiencies)
-plt.title('Efficiency of robot.')
-plt.xlabel('Efficiency %')
-plt.ylabel('count')
-plt.show()
+# # Make some plots:
+# plt.hist(cleaned)
+# plt.title('Percentage of tiles cleaned.')
+# plt.xlabel('% cleaned')
+# plt.ylabel('count')
+# plt.show()
+
+# plt.hist(efficiencies)
+# plt.title('Efficiency of robot.')
+# plt.xlabel('Efficiency %')
+# plt.ylabel('count')
+# plt.show()
