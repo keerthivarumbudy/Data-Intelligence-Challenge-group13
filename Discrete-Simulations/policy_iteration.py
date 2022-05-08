@@ -123,7 +123,7 @@ class DumbRobot(Robot):
         possible_actions = list(immediate_state_ids.keys())
         
         # get reward for each immediate state
-        immediate_rewards = [updated_get_reward(self.S[state_id], self.S[self.S[state_id]["immediately_reachable_states"][orientation]]) for orientation in possible_actions]
+        immediate_rewards = [updated_get_reward(self.S[self.S[state_id]["immediately_reachable_states"][orientation]]) for orientation in possible_actions]
         
         # get the value of each immediate state
         immediate_values = [self.values[list_S.index(id)] for id in list(immediate_state_ids.values())]

@@ -151,7 +151,7 @@ def get_state_info(grid):
     elif not robot_alive:
         is_terminal = True
         termination_reason = 'death'
-    return clean_tiles_number, is_terminal, termination_reason
+    return clean_tiles_number+1, is_terminal, termination_reason
                 
     
 def generate_reachable_states(state, state_dict = OrderedDict(), is_state_goal_bool = False):
