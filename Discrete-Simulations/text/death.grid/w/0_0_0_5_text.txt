@@ -1,0 +1,1 @@
+average_efficiency : 100.0, average_n_moves : 7.0, average_cleaned : 100.0
