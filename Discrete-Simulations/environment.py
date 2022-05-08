@@ -1,6 +1,12 @@
 import numpy as np
 import random
 
+from utils.utility import *
+from utils.get_all_reachable_states import *
+
+SMALL_ENOUGH = 1e-3
+ALL_POSSIBLE_ACTIONS = ('U', 'D', 'L', 'R')
+
 
 class Robot:
     def __init__(self, grid, pos, orientation, p_move=0, battery_drain_p=0, battery_drain_lam=0, vision=1):
@@ -84,6 +90,27 @@ class Robot:
             else:
                 return False
 
+    def move_to_position(self):
+        # Can't move if we're dead now, can we?
+        if not self.alive:
+            return False
+        new_pos = tuple(np.array(self.pos) + self.dirs[self.orientation])
+        # Only move to non-blocked tiles:
+        if self.grid.cells[new_pos] >= 0:
+            tile_after_move = self.grid.cells[new_pos]
+            self.grid.cells[self.pos] = 0
+            self.grid.cells[new_pos] = self.orients[self.orientation]
+            self.pos = new_pos
+            self.history[0].append(self.pos[0])
+            self.history[1].append(self.pos[1])
+            # Death:
+            if tile_after_move == 3:
+                self.alive = False
+                return False
+            return True
+        else:
+            return False
+
     def rotate(self, dir):
         current = list(self.orients.keys()).index(self.orientation)
         if dir == 'r':
@@ -122,3 +149,91 @@ def generate_grid(n_cols, n_rows):
     # Look at grid_generator.py for inspiration.
     grid = Grid(n_cols, n_rows)
     return grid
+
+def best_action_value(V, s, gamma):
+    # finds the highest value action (max_a) from state s, returns the action and value
+    best_a = None
+    best_value = float('-inf')
+
+    # loop through all possible actions to find the best current action
+    for a in ALL_POSSIBLE_ACTIONS:
+        transititions = s.get_transition_probs(a)
+        sum = 0
+        for (prob, r, state_prime) in transititions:
+            sum += prob * (r + (gamma * V[state_prime]))
+        v = sum
+        if v > best_value:
+            best_value = v
+            best_a = a
+    return best_a, best_value
+
+
+class SmartRobot(Robot):
+    def __init__(self, grid, pos, orientation, p_move=0, battery_drain_p=0, battery_drain_lam=0, vision=1, gamma=0.9):
+        if grid.cells[pos[0], pos[1]] != 1:
+            raise ValueError
+        self.orientation = orientation
+        self.pos = pos
+        self.grid = grid
+        self.orients = {'n': -3, 'e': -4, 's': -5, 'w': -6}
+        self.dirs = {'n': (0, -1), 'e': (1, 0), 's': (0, 1), 'w': (-1, 0)}
+        self.grid.cells[pos] = self.orients[self.orientation]
+        self.history = [[], []]
+        self.p_move = p_move
+        self.battery_drain_p = battery_drain_p
+        self.battery_drain_lam = battery_drain_lam
+        self.battery_lvl = 100
+        self.alive = True
+        self.vision = vision
+        self.gamma = gamma
+        self.V = self.calculate_values()
+        self.policy = self.calculate_policy()
+
+
+    def calculate_values(self):
+        from robot_configs.value_iteration_robot import State
+        current_state = State(self.grid, self.pos, self.orientation, self.p_move, self.battery_drain_p,
+                              self.battery_drain_lam)
+
+        #initialize V(s)
+        V = {}
+        possible_states = current_state.get_possible_states()
+        print("robot.states:", possible_states)
+        for s in possible_states:
+            V[s] = 0
+        #repeat until convergence
+        # V[s] = max[a]{ sum[s',r] { p(s',r|s,a)[r + gamma*V[s']] } }
+        while True:
+            # biggest_change is referred to by the mathematical symbol delta in equations
+            biggest_change = 0
+            for s in possible_states:
+                old_v = V[s]
+                _, new_v = best_action_value(V, s, self.gamma)
+                V[s] = new_v
+                biggest_change = max(biggest_change, np.abs(old_v - new_v))
+
+            if biggest_change < SMALL_ENOUGH:
+                break
+        return V
+
+    def initialize_random_policy(self):
+        # policy is a lookup table for state -> action
+        # we'll randomly choose an action and update as we learn
+        policy = {}
+        for s in self.grid.non_terminal_states():
+            policy[s] = np.random.choice(ALL_POSSIBLE_ACTIONS)
+        return policy
+
+    def calculate_policy(self):
+        from robot_configs.value_iteration_robot import State
+        current_state = State(self.grid, self.pos, self.orientation, self.p_move, self.battery_drain_p,
+                              self.battery_drain_lam)
+        possible_states = current_state.get_possible_states()
+        policy = {}
+        # find a policy that leads to optimal value function
+        for s in possible_states:
+            # loop through all possible actions to find the best current action
+            best_a, _ = best_action_value(self.V, s)
+            policy[(s.grid.cells, s.pos)] = best_a
+        return policy
+    
